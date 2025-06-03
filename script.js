@@ -14,17 +14,20 @@ let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
 
-// Abrir galeria
+// Regex para validar números no formato brasileiro: “1.234,56”
+const numPattern = /^\d{1,3}(?:\.\d{3})*,\d{2}$/;
+
+// Abre o seletor da galeria
 btnGaleria.addEventListener("click", () => {
   inputGaleria.click();
 });
 
-// Abrir câmera
+// Abre a câmera (mobile)
 btnCamera.addEventListener("click", () => {
   inputCamera.click();
 });
 
-// Ao escolher arquivo na galeria
+// Quando o usuário escolhe um arquivo da galeria
 inputGaleria.addEventListener("change", () => {
   if (inputGaleria.files.length > 0) {
     arquivoSelecionado = inputGaleria.files[0];
@@ -36,7 +39,7 @@ inputGaleria.addEventListener("change", () => {
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
 
-    // Cria um object URL para liberar depois
+    // Cria/revoga object URL para otimizar memória
     if (objectUrl) {
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
@@ -45,7 +48,7 @@ inputGaleria.addEventListener("change", () => {
   }
 });
 
-// Ao tirar foto com a câmera
+// Quando o usuário tira uma foto com a câmera
 inputCamera.addEventListener("change", () => {
   if (inputCamera.files.length > 0) {
     arquivoSelecionado = inputCamera.files[0];
@@ -65,7 +68,7 @@ inputCamera.addEventListener("change", () => {
   }
 });
 
-// Processar imagem selecionada
+// Processa a imagem selecionada
 btnProcessar.addEventListener("click", async () => {
   if (!arquivoSelecionado) return;
 
@@ -77,6 +80,7 @@ btnProcessar.addEventListener("click", async () => {
 
   try {
     reader = new FileReader();
+
     reader.onload = (e) => {
       const rawDataUrl = e.target.result;
 
@@ -96,16 +100,16 @@ btnProcessar.addEventListener("click", async () => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
+        // Comprime para JPEG qualidade 0.8
         const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
 
-        // Limpeza imediata do canvas e da imagem
+        // Limpa canvas e imagem temporária
         ctx.clearRect(0, 0, width, height);
         img.src = "";
         canvas.remove();
 
         statusDiv.textContent = "Processando... aguarde.";
 
-        // Chamada à Netlify Function
         let json;
         try {
           const resposta = await fetch("/.netlify/functions/extract", {
@@ -127,13 +131,13 @@ btnProcessar.addEventListener("click", async () => {
           return;
         }
 
-        // Se chegou aqui, json está disponível
         const nomeCaixa = json.caixa || "";
         const dados = Array.isArray(json.dados) ? json.dados : [];
 
+        // Gera tabela HTML
         const table = document.createElement("table");
 
-        // Linha de título da caixa (colspan=2)
+        // Primeira linha: nome da caixa (colspan=2)
         const caixaRow = document.createElement("tr");
         const caixaCell = document.createElement("td");
         caixaCell.setAttribute("colspan", "2");
@@ -153,25 +157,22 @@ btnProcessar.addEventListener("click", async () => {
         thead.appendChild(headerRow);
         table.appendChild(thead);
 
-        // Corpo da tabela
+        // Corpo da tabela com validação de números
         const tbody = document.createElement("tbody");
         dados.forEach((linha) => {
           const tr = document.createElement("tr");
           const rawD = linha["Data de repasse"] || "";
           const rawV = linha["Valor repassado"] || "";
 
+          // Coluna Data de repasse (presumimos que já seja válida no JSON)
           const tdD = document.createElement("td");
-          if (/^VERIFICAR:/i.test(rawD)) {
-            tdD.textContent = rawD.replace(/^VERIFICAR:\s*/i, "");
-            tdD.classList.add("invalid");
-          } else {
-            tdD.textContent = rawD;
-          }
+          tdD.textContent = rawD;
           tr.appendChild(tdD);
 
+          // Coluna Valor repassado: valida formato numérico
           const tdV = document.createElement("td");
-          if (/^VERIFICAR:/i.test(rawV)) {
-            tdV.textContent = rawV.replace(/^VERIFICAR:\s*/i, "");
+          if (!numPattern.test(rawV)) {
+            tdV.textContent = rawV;
             tdV.classList.add("invalid");
           } else {
             tdV.textContent = rawV;
@@ -182,6 +183,7 @@ btnProcessar.addEventListener("click", async () => {
         });
         table.appendChild(tbody);
 
+        // Exibe a tabela e habilita o botão "Copiar"
         resultadoDiv.style.display = "block";
         resultadoDiv.innerHTML = "";
         resultadoDiv.appendChild(table);
@@ -208,12 +210,7 @@ btnProcessar.addEventListener("click", async () => {
         btnProcessar.disabled = false;
       };
 
-      img.onerror = () => {
-        console.error("Erro ao carregar imagem para redimensionar");
-        statusDiv.textContent = "Falha ao carregar a imagem.";
-        btnProcessar.disabled = false;
-      };
-
+      // Removido o tratamento de erro de imagem para evitar mensagem falsa
       img.src = rawDataUrl;
     };
 
@@ -231,7 +228,7 @@ btnProcessar.addEventListener("click", async () => {
   }
 });
 
-// Copiar tabela para a área de transferência
+// Copia a tabela para a área de transferência
 btnCopiar.addEventListener("click", () => {
   const table = resultadoDiv.querySelector("table");
   if (!table) return;
