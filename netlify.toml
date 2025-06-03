@@ -1,15 +1,12 @@
 # netlify.toml
 
 [build]
-  publish = "."      # pasta onde está index.html
-  command = ""       # sem build step
+  publish = "."    # Publica a raiz (onde está index.html)
+  command = ""     # Sem build step
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = true
-  conditions = { Role = [] }     # (em vaga de roles podemos usar Basic Auth abaixo)
-  # Basic Auth:
   force = true
   headers = { "Basic-Auth" = ":senha123" }
