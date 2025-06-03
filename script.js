@@ -12,12 +12,12 @@ const filenameDiv = document.getElementById("filename");
 
 let arquivoSelecionado = null;
 
-// Ao clicar em "Escolher da Galeria"
+// Abrir galeria
 btnGaleria.addEventListener("click", () => {
   inputGaleria.click();
 });
 
-// Ao clicar em "Tirar Foto"
+// Abrir câmera
 btnCamera.addEventListener("click", () => {
   inputCamera.click();
 });
@@ -50,7 +50,7 @@ inputCamera.addEventListener("change", () => {
   }
 });
 
-// Quando o usuário clica em "Processar"
+// Processar imagem selecionada
 btnProcessar.addEventListener("click", async () => {
   if (!arquivoSelecionado) return;
 
@@ -66,7 +66,6 @@ btnProcessar.addEventListener("click", async () => {
     statusDiv.textContent = "Processando... aguarde.";
 
     try {
-      // Em vez de chamar Groq diretamente, chamamos nossa Netlify Function
       const resposta = await fetch("/.netlify/functions/extract", {
         method: "POST",
         headers: {
@@ -83,16 +82,15 @@ btnProcessar.addEventListener("click", async () => {
       }
 
       const json = await resposta.json();
-      // O JSON de resposta já vem no formato esperado:
-      // { caixa: "CAIXA 08", dados: [ { "Data de repasse": "...", "Valor repassado": "..." }, ... ] }
+      // O JSON vem no formato: { caixa: "CAIXA XX", dados: [ {...}, ... ] }
 
       const nomeCaixa = json.caixa || "";
       const dados = Array.isArray(json.dados) ? json.dados : [];
 
-      // Monta a tabela HTML
+      // Monta tabela HTML com nome da caixa como primeira linha
       const table = document.createElement("table");
 
-      // Primeira linha: título da caixa (colspan=2)
+      // Linha de título da caixa (colspan=2)
       const caixaRow = document.createElement("tr");
       const caixaCell = document.createElement("td");
       caixaCell.setAttribute("colspan", "2");
@@ -119,7 +117,6 @@ btnProcessar.addEventListener("click", async () => {
         const rawD = linha["Data de repasse"] || "";
         const rawV = linha["Valor repassado"] || "";
 
-        // Se o valor começar com "VERIFICAR:", aplicamos classe `.invalid`
         const tdD = document.createElement("td");
         if (/^VERIFICAR:/i.test(rawD)) {
           tdD.textContent = rawD.replace(/^VERIFICAR:\s*/i, "");
@@ -144,11 +141,21 @@ btnProcessar.addEventListener("click", async () => {
 
       // Exibe a tabela e habilita o botão "Copiar"
       resultadoDiv.style.display = "block";
-      resultadoDiv.innerHTML = ""; // limpa antes
+      resultadoDiv.innerHTML = "";
       resultadoDiv.appendChild(table);
 
       btnCopiar.disabled = false;
       statusDiv.textContent = "Tabela extraída abaixo:";
+
+      // -------------------------------
+      // **LIMPEZA DE MEMÓRIA AQUI**
+      // -------------------------------
+      arquivoSelecionado = null;
+      reader.result = null;
+      inputGaleria.value = "";
+      inputCamera.value = "";
+      reader.onload = null;
+      reader.onerror = null;
     } catch (err) {
       console.error(err);
       statusDiv.textContent = `Ocorreu um erro: ${err.message}`;
