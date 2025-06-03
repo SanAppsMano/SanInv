@@ -1,7 +1,5 @@
 // netlify/functions/extract.js
 
-import fetch from "node-fetch";
-
 exports.handler = async (event, _context) => {
   if (event.httpMethod !== "POST") {
     return {
@@ -11,6 +9,7 @@ exports.handler = async (event, _context) => {
   }
 
   try {
+    // Lê do corpo JSON enviado pelo front-end
     const { imageDataUrl } = JSON.parse(event.body);
     if (!imageDataUrl) {
       return {
@@ -20,7 +19,8 @@ exports.handler = async (event, _context) => {
     }
 
     // As chaves devem estar definidas como variável de ambiente no Netlify:
-    // GROQ_API_KEYS = "chave1,chave2,chave3"
+    // Exemplo no painel Netlify:
+    // GROQ_API_KEYS=chave1,chave2,chave3
     const rawKeys = process.env.GROQ_API_KEYS || "";
     const apiKeys = rawKeys
       .split(",")
@@ -36,7 +36,7 @@ exports.handler = async (event, _context) => {
 
     let lastError = null;
 
-    // Para cada chave, tentamos chamar a API até obter sucesso.
+    // Tenta cada chave em sequência até ganhar um HTTP 200
     for (const key of apiKeys) {
       try {
         // Monta o payload para a Groq API
@@ -53,22 +53,22 @@ exports.handler = async (event, _context) => {
                     "Para qualquer número que não se enquadre no padrão de separação de milhares (pontos) e decimais (vírgula), anteponha 'VERIFICAR:' ao valor. " +
                     "Retorne estritamente um JSON puro: " +
                     '{"caixa":"CAIXA XX","dados":[{"Data de repasse":"DD/MM/AAAA","Valor repassado":"123.456,78"}, ...]}. ' +
-                    "Sem texto adicional ou comentários."
+                    "Sem texto adicional ou comentários.",
                 },
                 {
                   type: "image_url",
-                  image_url: { url: imageDataUrl }
-                }
-              ]
-            }
+                  image_url: { url: imageDataUrl },
+                },
+              ],
+            },
           ],
           temperature: 0,
           max_completion_tokens: 1024,
           top_p: 1,
-          stream: false
+          stream: false,
         };
 
-        // Faz a chamada à Groq API usando a chave atual
+        // Faz a chamada à Groq API usando a chave corrente
         const response = await fetch(
           "https://api.groq.com/openai/v1/chat/completions",
           {
@@ -81,11 +81,12 @@ exports.handler = async (event, _context) => {
           }
         );
 
-        // Se tiver sucesso, parseamos e retornamos
+        // Se a resposta for HTTP 200, parseia e retorna ao front-end
         if (response.ok) {
           const json = await response.json();
           let content = json.choices[0].message.content.trim();
-          // Remove eventuais blocos ```json … ```
+
+          // Se vier dentro de blocos ```json ... ```
           if (content.startsWith("```")) {
             content = content
               .replace(/^```(?:json)?\s*/i, "")
@@ -99,11 +100,12 @@ exports.handler = async (event, _context) => {
           } catch (err) {
             return {
               statusCode: 500,
-              body: "Erro ao fazer parse do JSON retornado pela Groq API: " + err.message,
+              body:
+                "Erro ao fazer parse do JSON retornado pela Groq API: " +
+                err.message,
             };
           }
 
-          // Se deu tudo certo, devolvemos o JSON do front-end
           return {
             statusCode: 200,
             body: JSON.stringify(parsed),
@@ -113,16 +115,16 @@ exports.handler = async (event, _context) => {
           };
         }
 
-        // Se o status não for 200, anotamos o erro e partimos para a próxima chave.
+        // Se não for 200, armazena o erro e parte para a próxima chave
         const erroTexto = await response.text();
         lastError = `Chave inválida ou sem tokens: HTTP ${response.status} — ${erroTexto}`;
       } catch (err) {
-        // Qualquer falha de fetch ou parse, anotamos e tentamos a próxima chave.
+        // Captura falhas de fetch ou parse e continua para a próxima chave
         lastError = `Erro ao tentar chave: ${err.message}`;
       }
     }
 
-    // Se chegou aqui, nenhuma chave funcionou
+    // Se chegar aqui, nenhuma chave funcionou
     return {
       statusCode: 500,
       body: `Todas as chaves falharam. Último erro: ${lastError}`,
