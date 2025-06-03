@@ -61,6 +61,7 @@ btnProcessar.addEventListener("click", async () => {
   btnCopiar.disabled = true;
 
   const reader = new FileReader();
+
   reader.onload = async (e) => {
     const dataUrl = e.target.result;
     statusDiv.textContent = "Processando... aguarde.";
@@ -150,10 +151,15 @@ btnProcessar.addEventListener("click", async () => {
       // -------------------------------
       // **LIMPEZA DE MEMÓRIA AQUI**
       // -------------------------------
+      // Zera variáveis grandes
       arquivoSelecionado = null;
       reader.result = null;
+
+      // Limpa inputs para liberar referência ao arquivo
       inputGaleria.value = "";
       inputCamera.value = "";
+
+      // Remove callbacks do FileReader
       reader.onload = null;
       reader.onerror = null;
     } catch (err) {
