@@ -1,0 +1,12 @@
+# netlify.toml
+
+[build]
+  publish = "."     # publica a raiz (onde está index.html)
+  command = ""      # sem build step (site estático)
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true
+  headers = { "Basic-Auth" = ":senha123" }
