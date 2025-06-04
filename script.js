@@ -134,13 +134,16 @@ btnProcessar.addEventListener("click", async () => {
         const nomeCaixa = json.caixa || "";
         const dados = Array.isArray(json.dados) ? json.dados : [];
 
+        // Determina as colunas dinamicamente a partir do primeiro item
+        const colunas = dados.length > 0 ? Object.keys(dados[0]) : [];
+
         // Gera tabela HTML
         const table = document.createElement("table");
 
-        // Primeira linha: nome da caixa (colspan=2)
+        // Primeira linha: nome da caixa (colspan dinamico)
         const caixaRow = document.createElement("tr");
         const caixaCell = document.createElement("td");
-        caixaCell.setAttribute("colspan", "2");
+        caixaCell.setAttribute("colspan", String(colunas.length));
         caixaCell.textContent = nomeCaixa;
         caixaCell.classList.add("caixa-cell");
         caixaRow.appendChild(caixaCell);
@@ -149,7 +152,7 @@ btnProcessar.addEventListener("click", async () => {
         // Cabeçalho da tabela
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
-        ["Data de repasse", "Valor repassado"].forEach((col) => {
+        colunas.forEach((col) => {
           const th = document.createElement("th");
           th.textContent = col;
           headerRow.appendChild(th);
@@ -161,24 +164,21 @@ btnProcessar.addEventListener("click", async () => {
         const tbody = document.createElement("tbody");
         dados.forEach((linha) => {
           const tr = document.createElement("tr");
-          const rawD = linha["Data de repasse"] || "";
-          const rawV = linha["Valor repassado"] || "";
-
-          // Coluna Data de repasse (presumimos que já seja válida no JSON)
-          const tdD = document.createElement("td");
-          tdD.textContent = rawD;
-          tr.appendChild(tdD);
-
-          // Coluna Valor repassado: valida formato numérico
-          const tdV = document.createElement("td");
-          if (!numPattern.test(rawV)) {
-            tdV.textContent = rawV;
-            tdV.classList.add("invalid");
-          } else {
-            tdV.textContent = rawV;
-          }
-          tr.appendChild(tdV);
-
+          colunas.forEach((col) => {
+            const valor = linha[col] ?? "";
+            const td = document.createElement("td");
+            if (typeof valor === "string" && /\d/.test(valor)) {
+              if (!numPattern.test(valor)) {
+                td.textContent = valor;
+                td.classList.add("invalid");
+              } else {
+                td.textContent = valor;
+              }
+            } else {
+              td.textContent = valor;
+            }
+            tr.appendChild(td);
+          });
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
