@@ -50,12 +50,10 @@ exports.handler = async (event, _context) => {
                   type: "text",
                   text:
                     "Extraia todo o texto vis\u00edvel da imagem mantendo fidelidade ao conte\u00fado. " +
-                    "Se houver o nome e n\u00famero da caixa (ex.: 'CAIXA 08'), coloque no campo 'caixa'. " +
                     "Copie integralmente as tabelas, preservando os nomes das colunas e cada linha. " +
                     "Textos que n\u00e3o pertencem a tabelas devem ser listados na coluna 'texto_livre' na ordem em que aparecem. " +
                     "O campo 'dados' deve ser um array cujos objetos possuam exatamente as mesmas chaves das colunas identificadas. " +
-                    "Para n\u00fameros fora do padr\u00e3o brasileiro de pontos e v\u00edrgula, anteponha 'VERIFICAR:' ao valor. " +
-                    "Retorne apenas o JSON: {\"caixa\":\"CAIXA XX\",\"dados\":[{\"Coluna\":\"valor\"}, ...]}. " +
+                    "Retorne apenas o JSON: {\"dados\":[{\"Coluna\":\"valor\"}, ...]}. " +
                     "Sem texto adicional ou coment\u00e1rios.",
                 },
                 {

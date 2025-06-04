@@ -140,14 +140,16 @@ btnProcessar.addEventListener("click", async () => {
         // Gera tabela HTML
         const table = document.createElement("table");
 
-        // Primeira linha: nome da caixa (colspan dinamico)
-        const caixaRow = document.createElement("tr");
-        const caixaCell = document.createElement("td");
-        caixaCell.setAttribute("colspan", String(colunas.length));
-        caixaCell.textContent = nomeCaixa;
-        caixaCell.classList.add("caixa-cell");
-        caixaRow.appendChild(caixaCell);
-        table.appendChild(caixaRow);
+        if (nomeCaixa) {
+          // Primeira linha: nome da caixa (colspan dinamico)
+          const caixaRow = document.createElement("tr");
+          const caixaCell = document.createElement("td");
+          caixaCell.setAttribute("colspan", String(colunas.length));
+          caixaCell.textContent = nomeCaixa;
+          caixaCell.classList.add("caixa-cell");
+          caixaRow.appendChild(caixaCell);
+          table.appendChild(caixaRow);
+        }
 
         // Cabeçalho da tabela
         const thead = document.createElement("thead");
