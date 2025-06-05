@@ -6,7 +6,6 @@ const inputGaleria = document.getElementById("inputGaleria");
 const inputCamera = document.getElementById("inputCamera");
 const btnProcessar = document.getElementById("processar");
 const btnCopiar = document.getElementById("copiar");
-const btnResumo = document.getElementById("resumir");
 const btnCopiarResumo = document.getElementById("copiarResumo");
 const statusDiv = document.getElementById("status");
 const resultadoDiv = document.getElementById("resultado");
@@ -16,7 +15,6 @@ const filenameDiv = document.getElementById("filename");
 let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
-let textoExtraidoAtual = "";
 
 
 // Abre o seletor da galeria
@@ -42,10 +40,7 @@ inputGaleria.addEventListener("change", () => {
     resumoDiv.innerHTML = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
-    btnResumo.disabled = true;
     btnCopiarResumo.disabled = true;
-    textoExtraidoAtual = "";
-    textoExtraidoAtual = "";
 
     // Cria/revoga object URL para otimizar memória
     if (objectUrl) {
@@ -69,7 +64,6 @@ inputCamera.addEventListener("change", () => {
     resumoDiv.innerHTML = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
-    btnResumo.disabled = true;
     btnCopiarResumo.disabled = true;
 
     if (objectUrl) {
@@ -91,7 +85,6 @@ btnProcessar.addEventListener("click", async () => {
   resumoDiv.style.display = "none";
   resumoDiv.innerHTML = "";
   btnCopiar.disabled = true;
-  btnResumo.disabled = true;
   btnCopiarResumo.disabled = true;
 
   try {
@@ -148,7 +141,6 @@ btnProcessar.addEventListener("click", async () => {
         }
 
         const textoExtraido = typeof json.texto === "string" ? json.texto : "";
-        textoExtraidoAtual = textoExtraido;
 
         const pre = document.createElement("pre");
         pre.textContent = textoExtraido;
@@ -158,8 +150,9 @@ btnProcessar.addEventListener("click", async () => {
         resultadoDiv.innerHTML = "";
         resultadoDiv.appendChild(pre);
         btnCopiar.disabled = false;
-        btnResumo.disabled = false;
         statusDiv.textContent = "Texto extraído abaixo:";
+
+        gerarResumo(textoExtraido);
 
         // -------------------------------
         // Limpeza de memória
@@ -217,12 +210,10 @@ btnCopiar.addEventListener("click", () => {
   }
 });
 
-// Gera resumo do texto extraído
-btnResumo.addEventListener("click", async () => {
-  if (!textoExtraidoAtual) return;
+async function gerarResumo(texto) {
+  if (!texto) return;
 
-  btnResumo.disabled = true;
-  statusDiv.textContent = "Gerando resumo...";
+  statusDiv.textContent = "Gerando análise e resumo...";
   resumoDiv.style.display = "none";
   resumoDiv.innerHTML = "";
   btnCopiarResumo.disabled = true;
@@ -231,7 +222,7 @@ btnResumo.addEventListener("click", async () => {
     const resp = await fetch("/.netlify/functions/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto: textoExtraidoAtual }),
+      body: JSON.stringify({ texto }),
     });
 
     if (!resp.ok) {
@@ -240,24 +231,24 @@ btnResumo.addEventListener("click", async () => {
     }
 
     const jsonResumo = await resp.json();
-    const resumo = typeof jsonResumo.resumo === "string" ? jsonResumo.resumo : "";
+    const resumoTxt = [jsonResumo.resumo, jsonResumo.analise]
+      .filter((t) => typeof t === "string" && t.trim().length > 0)
+      .join("\n\n");
 
     const pre = document.createElement("pre");
-    pre.textContent = resumo;
+    pre.textContent = resumoTxt;
     pre.style.whiteSpace = "pre-wrap";
 
     resumoDiv.innerHTML = "";
     resumoDiv.appendChild(pre);
     resumoDiv.style.display = "block";
     btnCopiarResumo.disabled = false;
-    statusDiv.textContent = "Resumo gerado abaixo:";
+    statusDiv.textContent = "Análise gerada abaixo:";
   } catch (err) {
     console.error(err);
-    statusDiv.textContent = `Erro ao resumir: ${err.message}`;
-  } finally {
-    btnResumo.disabled = false;
+    statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
   }
-});
+}
 
 // Copia o resumo
 btnCopiarResumo.addEventListener("click", () => {

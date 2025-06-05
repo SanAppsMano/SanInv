@@ -123,6 +123,19 @@ h1 {
   box-sizing: border-box;
 }
 
+.resumo-output {
+  background: #fee;
+  position: relative;
+}
+
+.copy-inline {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+}
+
 .output pre {
   white-space: pre-wrap;
   font-family: monospace;
