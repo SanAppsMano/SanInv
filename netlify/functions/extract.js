@@ -49,12 +49,8 @@ exports.handler = async (event, _context) => {
                 {
                   type: "text",
                   text:
-                    "Extraia todo o texto vis\u00edvel da imagem com m\u00e1xima fidelidade ao conte\u00fado. " +
-                    "Se houver organiza\u00e7\u00e3o em colunas ou linhas, preserve essa estrutura e transcreva cada palavra e n\u00famero exatamente como aparece. " +
-                    "Textos sem alinhamento claro devem ser listados na coluna 'texto_livre' na ordem em que aparecem. " +
-                    "O campo 'dados' precisa ser um array de objetos cujas chaves correspondam aos nomes das colunas identificadas. " +
-                    "Retorne somente o JSON: {\"dados\":[{\"Coluna\":\"valor\"}, ...]}. " +
-                    "Sem texto adicional ou coment\u00e1rios.",
+                    "Transcreva com m\u00e1xima fidelidade todo o texto vis\u00edvel da imagem, interpretando letras grandes ou incomuns quando necess\u00e1rio. " +
+                    "Devolva apenas um JSON no formato {\"texto\":\"conte\u00fado extra\u00eddo\"} sem qualquer coment\u00e1rio.",
                 },
                 {
                   type: "image_url",

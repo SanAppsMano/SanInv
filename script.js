@@ -14,8 +14,6 @@ let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
 
-// Regex para validar números no formato brasileiro: “1.234,56”
-const numPattern = /^\d{1,3}(?:\.\d{3})*,\d{2}$/;
 
 // Abre o seletor da galeria
 btnGaleria.addEventListener("click", () => {
@@ -131,66 +129,17 @@ btnProcessar.addEventListener("click", async () => {
           return;
         }
 
-        const nomeCaixa = json.caixa || "";
-        const dados = Array.isArray(json.dados) ? json.dados : [];
+        const textoExtraido = typeof json.texto === "string" ? json.texto : "";
 
-        // Determina as colunas dinamicamente a partir do primeiro item
-        const colunas = dados.length > 0 ? Object.keys(dados[0]) : [];
+        const pre = document.createElement("pre");
+        pre.textContent = textoExtraido;
+        pre.style.whiteSpace = "pre-wrap";
 
-        // Gera tabela HTML
-        const table = document.createElement("table");
-
-        if (nomeCaixa) {
-          // Primeira linha: nome da caixa (colspan dinamico)
-          const caixaRow = document.createElement("tr");
-          const caixaCell = document.createElement("td");
-          caixaCell.setAttribute("colspan", String(colunas.length));
-          caixaCell.textContent = nomeCaixa;
-          caixaCell.classList.add("caixa-cell");
-          caixaRow.appendChild(caixaCell);
-          table.appendChild(caixaRow);
-        }
-
-        // Cabeçalho da tabela
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        colunas.forEach((col) => {
-          const th = document.createElement("th");
-          th.textContent = col;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        // Corpo da tabela com validação de números
-        const tbody = document.createElement("tbody");
-        dados.forEach((linha) => {
-          const tr = document.createElement("tr");
-          colunas.forEach((col) => {
-            const valor = linha[col] ?? "";
-            const td = document.createElement("td");
-            if (typeof valor === "string" && /\d/.test(valor)) {
-              if (!numPattern.test(valor)) {
-                td.textContent = valor;
-                td.classList.add("invalid");
-              } else {
-                td.textContent = valor;
-              }
-            } else {
-              td.textContent = valor;
-            }
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-
-        // Exibe a tabela e habilita o botão "Copiar"
         resultadoDiv.style.display = "block";
         resultadoDiv.innerHTML = "";
-        resultadoDiv.appendChild(table);
+        resultadoDiv.appendChild(pre);
         btnCopiar.disabled = false;
-        statusDiv.textContent = "Tabela extraída abaixo:";
+        statusDiv.textContent = "Texto extraído abaixo:";
 
         // -------------------------------
         // Limpeza de memória
@@ -230,19 +179,19 @@ btnProcessar.addEventListener("click", async () => {
   }
 });
 
-// Copia a tabela para a área de transferência
+// Copia o texto para a área de transferência
 btnCopiar.addEventListener("click", () => {
-  const table = resultadoDiv.querySelector("table");
-  if (!table) return;
+  const pre = resultadoDiv.querySelector("pre");
+  if (!pre) return;
   const range = document.createRange();
-  range.selectNode(table);
+  range.selectNode(pre);
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
   try {
     document.execCommand("copy");
     sel.removeAllRanges();
-    statusDiv.textContent = "Tabela copiada com sucesso!";
+    statusDiv.textContent = "Texto copiado com sucesso!";
   } catch (err) {
     statusDiv.textContent = "Falha ao copiar: " + err;
   }
