@@ -30,23 +30,37 @@ function carregarHistorico() {
     historicoDiv.style.display = "block";
     listaHistorico.innerHTML = "";
     arr.forEach((item) => {
-      const li = document.createElement("li");
-      li.textContent = `${item.data} - ${item.nome}`;
-      li.addEventListener("click", () => {
+      const div = document.createElement("div");
+      div.className = "hist-item";
+
+      const img = document.createElement("img");
+      img.className = "hist-thumb";
+      img.src = item.thumb;
+      img.alt = item.nome;
+
+      const caption = document.createElement("span");
+      caption.className = "hist-caption";
+      caption.textContent = item.nome;
+
+      div.appendChild(img);
+      div.appendChild(caption);
+
+      div.addEventListener("click", () => {
         resultadoDiv.style.display = "block";
         resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
       });
-      listaHistorico.appendChild(li);
+
+      listaHistorico.appendChild(div);
     });
   }
 }
 
-function salvarHistorico(nome, texto) {
+function salvarHistorico(nome, texto, thumb) {
   let arr = [];
   try {
     arr = JSON.parse(localStorage.getItem("historico")) || [];
   } catch {}
-  arr.unshift({ nome, texto, data: new Date().toLocaleString() });
+  arr.unshift({ nome, texto, thumb, data: new Date().toLocaleString() });
   if (arr.length > 10) arr = arr.slice(0, 10);
   localStorage.setItem("historico", JSON.stringify(arr));
   carregarHistorico();
@@ -202,7 +216,7 @@ btnProcessar.addEventListener("click", async () => {
         btnCopiar.disabled = false;
         statusDiv.textContent = "Texto extraído abaixo:";
 
-        salvarHistorico(arquivoSelecionado.name, textoExtraido);
+        salvarHistorico(arquivoSelecionado.name, textoExtraido, compressedDataUrl);
         gerarResumo(textoExtraido);
 
         // -------------------------------
