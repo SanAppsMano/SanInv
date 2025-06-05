@@ -128,6 +128,12 @@ h1 {
   position: relative;
 }
 
+.titulo-resumo {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
 .copy-inline {
   position: absolute;
   top: 6px;

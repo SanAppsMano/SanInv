@@ -10,6 +10,7 @@ const btnCopiarResumo = document.getElementById("copiarResumo");
 const statusDiv = document.getElementById("status");
 const resultadoDiv = document.getElementById("resultado");
 const resumoDiv = document.getElementById("resumo");
+const resumoPre = document.getElementById("textoResumo");
 const filenameDiv = document.getElementById("filename");
 
 let arquivoSelecionado = null;
@@ -37,7 +38,7 @@ inputGaleria.addEventListener("change", () => {
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
     resumoDiv.style.display = "none";
-    resumoDiv.innerHTML = "";
+    resumoPre.textContent = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
     btnCopiarResumo.disabled = true;
@@ -61,7 +62,7 @@ inputCamera.addEventListener("change", () => {
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
     resumoDiv.style.display = "none";
-    resumoDiv.innerHTML = "";
+    resumoPre.textContent = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
     btnCopiarResumo.disabled = true;
@@ -83,7 +84,7 @@ btnProcessar.addEventListener("click", async () => {
   resultadoDiv.style.display = "none";
   resultadoDiv.innerHTML = "";
   resumoDiv.style.display = "none";
-  resumoDiv.innerHTML = "";
+  resumoPre.textContent = "";
   btnCopiar.disabled = true;
   btnCopiarResumo.disabled = true;
 
@@ -215,7 +216,7 @@ async function gerarResumo(texto) {
 
   statusDiv.textContent = "Gerando análise e resumo...";
   resumoDiv.style.display = "none";
-  resumoDiv.innerHTML = "";
+  resumoPre.textContent = "";
   btnCopiarResumo.disabled = true;
 
   try {
@@ -235,12 +236,7 @@ async function gerarResumo(texto) {
       .filter((t) => typeof t === "string" && t.trim().length > 0)
       .join("\n\n");
 
-    const pre = document.createElement("pre");
-    pre.textContent = resumoTxt;
-    pre.style.whiteSpace = "pre-wrap";
-
-    resumoDiv.innerHTML = "";
-    resumoDiv.appendChild(pre);
+    resumoPre.textContent = resumoTxt;
     resumoDiv.style.display = "block";
     btnCopiarResumo.disabled = false;
     statusDiv.textContent = "Análise gerada abaixo:";
@@ -252,8 +248,8 @@ async function gerarResumo(texto) {
 
 // Copia o resumo
 btnCopiarResumo.addEventListener("click", () => {
-  const pre = resumoDiv.querySelector("pre");
-  if (!pre) return;
+  const pre = resumoPre;
+  if (!pre || !pre.textContent) return;
   const range = document.createRange();
   range.selectNode(pre);
   const sel = window.getSelection();
