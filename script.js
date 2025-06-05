@@ -17,6 +17,7 @@ const spinner = document.getElementById("spinner");
 const historicoDiv = document.getElementById("historico");
 const listaHistorico = document.getElementById("listaHistorico");
 const btnLimparHistorico = document.getElementById("limparHistorico");
+const tituloHistorico = document.getElementById("tituloHistorico");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -29,6 +30,8 @@ function carregarHistorico() {
   } catch {}
   if (arr.length > 0) {
     historicoDiv.style.display = "block";
+    if (tituloHistorico)
+      tituloHistorico.textContent = `Histórico (${arr.length})`;
     if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
     listaHistorico.innerHTML = "";
     arr.forEach((item) => {
@@ -66,6 +69,7 @@ function carregarHistorico() {
   } else {
     historicoDiv.style.display = "none";
     listaHistorico.innerHTML = "";
+    if (tituloHistorico) tituloHistorico.textContent = "Histórico";
     if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
   }
 }
