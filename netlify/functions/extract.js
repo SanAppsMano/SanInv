@@ -49,11 +49,11 @@ exports.handler = async (event, _context) => {
                 {
                   type: "text",
                   text:
-                    "Extraia todo o texto vis\u00edvel da imagem mantendo fidelidade ao conte\u00fado. " +
-                    "Copie integralmente as tabelas, preservando os nomes das colunas e cada linha. " +
-                    "Textos que n\u00e3o pertencem a tabelas devem ser listados na coluna 'texto_livre' na ordem em que aparecem. " +
-                    "O campo 'dados' deve ser um array cujos objetos possuam exatamente as mesmas chaves das colunas identificadas. " +
-                    "Retorne apenas o JSON: {\"dados\":[{\"Coluna\":\"valor\"}, ...]}. " +
+                    "Extraia todo o texto vis\u00edvel da imagem com m\u00e1xima fidelidade ao conte\u00fado. " +
+                    "Se houver organiza\u00e7\u00e3o em colunas ou linhas, preserve essa estrutura e transcreva cada palavra e n\u00famero exatamente como aparece. " +
+                    "Textos sem alinhamento claro devem ser listados na coluna 'texto_livre' na ordem em que aparecem. " +
+                    "O campo 'dados' precisa ser um array de objetos cujas chaves correspondam aos nomes das colunas identificadas. " +
+                    "Retorne somente o JSON: {\"dados\":[{\"Coluna\":\"valor\"}, ...]}. " +
                     "Sem texto adicional ou coment\u00e1rios.",
                 },
                 {
