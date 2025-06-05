@@ -48,6 +48,15 @@ function carregarHistorico() {
       div.addEventListener("click", () => {
         resultadoDiv.style.display = "block";
         resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
+        if (item.resumo) {
+          resumoPre.textContent = item.resumo;
+          resumoDiv.style.display = "block";
+          btnCopiarResumo.disabled = false;
+        } else {
+          resumoDiv.style.display = "none";
+          resumoPre.textContent = "";
+          btnCopiarResumo.disabled = true;
+        }
       });
 
       listaHistorico.appendChild(div);
@@ -55,12 +64,18 @@ function carregarHistorico() {
   }
 }
 
-function salvarHistorico(nome, texto, thumb) {
+function salvarHistorico(nome, texto, thumb, resumo) {
   let arr = [];
   try {
     arr = JSON.parse(localStorage.getItem("historico")) || [];
   } catch {}
-  arr.unshift({ nome, texto, thumb, data: new Date().toLocaleString() });
+  arr.unshift({
+    nome,
+    texto,
+    thumb,
+    resumo,
+    data: new Date().toLocaleString(),
+  });
   if (arr.length > 10) arr = arr.slice(0, 10);
   localStorage.setItem("historico", JSON.stringify(arr));
   carregarHistorico();
@@ -216,8 +231,13 @@ btnProcessar.addEventListener("click", async () => {
         btnCopiar.disabled = false;
         statusDiv.textContent = "Texto extraído abaixo:";
 
-        salvarHistorico(arquivoSelecionado.name, textoExtraido, compressedDataUrl);
-        gerarResumo(textoExtraido);
+        const resumoTxt = await gerarResumo(textoExtraido);
+        salvarHistorico(
+          arquivoSelecionado.name,
+          textoExtraido,
+          compressedDataUrl,
+          resumoTxt
+        );
 
         // -------------------------------
         // Limpeza de memória
@@ -317,6 +337,7 @@ async function gerarResumo(texto) {
     btnCopiarResumo.disabled = false;
     statusDiv.textContent = "Análise gerada abaixo:";
     spinner.style.display = "none";
+    return resumoTxt;
   } catch (err) {
     console.error(err);
     statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
