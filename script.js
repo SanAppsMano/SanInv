@@ -87,7 +87,33 @@ function salvarHistorico(nome, texto, thumb, resumo) {
     data: new Date().toLocaleString(),
   });
   if (arr.length > 10) arr = arr.slice(0, 10);
-  localStorage.setItem("historico", JSON.stringify(arr));
+  try {
+    localStorage.setItem("historico", JSON.stringify(arr));
+  } catch (err) {
+    if (
+      err &&
+      (err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014)
+    ) {
+      while (arr.length > 0) {
+        arr.pop();
+        try {
+          localStorage.setItem("historico", JSON.stringify(arr));
+          break;
+        } catch (e) {
+          if (
+            !(
+              e &&
+              (e.name === "QuotaExceededError" ||
+                e.code === 22 ||
+                e.code === 1014)
+            )
+          ) {
+            break;
+          }
+        }
+      }
+    }
+  }
   carregarHistorico();
 }
 
