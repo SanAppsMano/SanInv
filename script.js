@@ -12,10 +12,47 @@ const resultadoDiv = document.getElementById("resultado");
 const resumoDiv = document.getElementById("resumo");
 const resumoPre = document.getElementById("textoResumo");
 const filenameDiv = document.getElementById("filename");
+const previewImg = document.getElementById("preview");
+const spinner = document.getElementById("spinner");
+const historicoDiv = document.getElementById("historico");
+const listaHistorico = document.getElementById("listaHistorico");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
+
+function carregarHistorico() {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  if (arr.length > 0) {
+    historicoDiv.style.display = "block";
+    listaHistorico.innerHTML = "";
+    arr.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = `${item.data} - ${item.nome}`;
+      li.addEventListener("click", () => {
+        resultadoDiv.style.display = "block";
+        resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
+      });
+      listaHistorico.appendChild(li);
+    });
+  }
+}
+
+function salvarHistorico(nome, texto) {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  arr.unshift({ nome, texto, data: new Date().toLocaleString() });
+  if (arr.length > 10) arr = arr.slice(0, 10);
+  localStorage.setItem("historico", JSON.stringify(arr));
+  carregarHistorico();
+}
+
+document.addEventListener("DOMContentLoaded", carregarHistorico);
 
 
 // Abre o seletor da galeria
@@ -49,6 +86,8 @@ inputGaleria.addEventListener("change", () => {
       objectUrl = null;
     }
     objectUrl = URL.createObjectURL(arquivoSelecionado);
+    previewImg.src = objectUrl;
+    previewImg.style.display = "block";
   }
 });
 
@@ -72,6 +111,8 @@ inputCamera.addEventListener("change", () => {
       objectUrl = null;
     }
     objectUrl = URL.createObjectURL(arquivoSelecionado);
+    previewImg.src = objectUrl;
+    previewImg.style.display = "block";
   }
 });
 
@@ -81,6 +122,7 @@ btnProcessar.addEventListener("click", async () => {
 
   btnProcessar.disabled = true;
   statusDiv.textContent = "Preparando imagem...";
+  spinner.style.display = "block";
   resultadoDiv.style.display = "none";
   resultadoDiv.innerHTML = "";
   resumoDiv.style.display = "none";
@@ -138,6 +180,13 @@ btnProcessar.addEventListener("click", async () => {
           console.error(errFetch);
           statusDiv.textContent = `Erro no processamento: ${errFetch.message}`;
           btnProcessar.disabled = false;
+          spinner.style.display = "none";
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+          previewImg.src = "";
+          previewImg.style.display = "none";
           return;
         }
 
@@ -153,6 +202,7 @@ btnProcessar.addEventListener("click", async () => {
         btnCopiar.disabled = false;
         statusDiv.textContent = "Texto extraído abaixo:";
 
+        salvarHistorico(arquivoSelecionado.name, textoExtraido);
         gerarResumo(textoExtraido);
 
         // -------------------------------
@@ -168,11 +218,14 @@ btnProcessar.addEventListener("click", async () => {
           URL.revokeObjectURL(objectUrl);
           objectUrl = null;
         }
+        previewImg.src = "";
+        previewImg.style.display = "none";
 
         inputGaleria.value = "";
         inputCamera.value = "";
 
         btnProcessar.disabled = false;
+        spinner.style.display = "none";
       };
 
       // Removido o tratamento de erro de imagem para evitar mensagem falsa
@@ -183,6 +236,13 @@ btnProcessar.addEventListener("click", async () => {
       console.error("Erro no FileReader");
       statusDiv.textContent = "Falha ao ler a imagem.";
       btnProcessar.disabled = false;
+      spinner.style.display = "none";
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      previewImg.src = "";
+      previewImg.style.display = "none";
     };
 
     reader.readAsDataURL(arquivoSelecionado);
@@ -190,21 +250,22 @@ btnProcessar.addEventListener("click", async () => {
     console.error("Erro inesperado no processamento:", err);
     statusDiv.textContent = `Erro inesperado: ${err.message}`;
     btnProcessar.disabled = false;
+    spinner.style.display = "none";
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+    previewImg.src = "";
+    previewImg.style.display = "none";
   }
 });
 
 // Copia o texto para a área de transferência
-btnCopiar.addEventListener("click", () => {
+btnCopiar.addEventListener("click", async () => {
   const pre = resultadoDiv.querySelector("pre");
   if (!pre) return;
-  const range = document.createRange();
-  range.selectNode(pre);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
   try {
-    document.execCommand("copy");
-    sel.removeAllRanges();
+    await navigator.clipboard.writeText(pre.textContent);
     statusDiv.textContent = "Texto copiado com sucesso!";
   } catch (err) {
     statusDiv.textContent = "Falha ao copiar: " + err;
@@ -218,6 +279,7 @@ async function gerarResumo(texto) {
   resumoDiv.style.display = "none";
   resumoPre.textContent = "";
   btnCopiarResumo.disabled = true;
+  spinner.style.display = "block";
 
   try {
     const resp = await fetch("/.netlify/functions/summarize", {
@@ -240,9 +302,11 @@ async function gerarResumo(texto) {
     resumoDiv.style.display = "block";
     btnCopiarResumo.disabled = false;
     statusDiv.textContent = "Análise gerada abaixo:";
+    spinner.style.display = "none";
   } catch (err) {
     console.error(err);
     statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
+    spinner.style.display = "none";
   }
 }
 
@@ -250,16 +314,12 @@ async function gerarResumo(texto) {
 btnCopiarResumo.addEventListener("click", () => {
   const pre = resumoPre;
   if (!pre || !pre.textContent) return;
-  const range = document.createRange();
-  range.selectNode(pre);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  try {
-    document.execCommand("copy");
-    sel.removeAllRanges();
-    statusDiv.textContent = "Resumo copiado com sucesso!";
-  } catch (err) {
-    statusDiv.textContent = "Falha ao copiar: " + err;
-  }
+  navigator.clipboard
+    .writeText(pre.textContent)
+    .then(() => {
+      statusDiv.textContent = "Resumo copiado com sucesso!";
+    })
+    .catch((err) => {
+      statusDiv.textContent = "Falha ao copiar: " + err;
+    });
 });
