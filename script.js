@@ -16,6 +16,7 @@ const previewImg = document.getElementById("preview");
 const spinner = document.getElementById("spinner");
 const historicoDiv = document.getElementById("historico");
 const listaHistorico = document.getElementById("listaHistorico");
+const btnLimparHistorico = document.getElementById("limparHistorico");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -28,6 +29,7 @@ function carregarHistorico() {
   } catch {}
   if (arr.length > 0) {
     historicoDiv.style.display = "block";
+    if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
     listaHistorico.innerHTML = "";
     arr.forEach((item) => {
       const div = document.createElement("div");
@@ -61,6 +63,10 @@ function carregarHistorico() {
 
       listaHistorico.appendChild(div);
     });
+  } else {
+    historicoDiv.style.display = "none";
+    listaHistorico.innerHTML = "";
+    if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
   }
 }
 
@@ -82,6 +88,14 @@ function salvarHistorico(nome, texto, thumb, resumo) {
 }
 
 document.addEventListener("DOMContentLoaded", carregarHistorico);
+
+if (btnLimparHistorico) {
+  btnLimparHistorico.addEventListener("click", () => {
+    localStorage.removeItem("historico");
+    carregarHistorico();
+    statusDiv.textContent = "Histórico limpo.";
+  });
+}
 
 
 // Abre o seletor da galeria

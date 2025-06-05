@@ -167,6 +167,22 @@ h1 {
 
 .historico {
   margin-top: 1.5rem;
+  position: relative;
+}
+
+.clear-history {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.clear-history:hover {
+  color: #000;
 }
 
 .lista-historico {

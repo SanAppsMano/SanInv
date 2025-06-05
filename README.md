@@ -14,6 +14,7 @@ Esta aplicação web permite extrair texto de imagens e receber uma análise res
 ## Deploy e uso
 
 Depois de configurar as variáveis de ambiente, publique o site pelo Netlify. Ao abrir a página, escolha uma imagem ou tire uma foto, processe-a e copie os resultados.
+Se desejar, utilize o botão **Limpar** no histórico para remover extrações anteriores salvas no navegador.
 
 Para desenvolvimento local, instale o [Netlify CLI](https://docs.netlify.com/cli/get-started/) e execute:
 
