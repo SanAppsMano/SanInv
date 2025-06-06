@@ -6,16 +6,127 @@ const inputGaleria = document.getElementById("inputGaleria");
 const inputCamera = document.getElementById("inputCamera");
 const btnProcessar = document.getElementById("processar");
 const btnCopiar = document.getElementById("copiar");
+const btnCopiarResumo = document.getElementById("copiarResumo");
 const statusDiv = document.getElementById("status");
 const resultadoDiv = document.getElementById("resultado");
+const resumoDiv = document.getElementById("resumo");
+const resumoPre = document.getElementById("textoResumo");
 const filenameDiv = document.getElementById("filename");
+const previewImg = document.getElementById("preview");
+const spinner = document.getElementById("spinner");
+const historicoDiv = document.getElementById("historico");
+const listaHistorico = document.getElementById("listaHistorico");
+const btnLimparHistorico = document.getElementById("limparHistorico");
+const tituloHistorico = document.getElementById("tituloHistorico");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
 
-// Regex para validar números no formato brasileiro: “1.234,56”
-const numPattern = /^\d{1,3}(?:\.\d{3})*,\d{2}$/;
+function carregarHistorico() {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  if (arr.length > 0) {
+    historicoDiv.style.display = "block";
+    if (tituloHistorico)
+      tituloHistorico.textContent = `Histórico (${arr.length})`;
+    if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
+    listaHistorico.innerHTML = "";
+    arr.forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "hist-item";
+
+      const img = document.createElement("img");
+      img.className = "hist-thumb";
+      img.src = item.thumb;
+      img.alt = item.nome;
+
+      const caption = document.createElement("span");
+      caption.className = "hist-caption";
+      caption.textContent = item.nome;
+
+      div.appendChild(img);
+      div.appendChild(caption);
+
+      div.addEventListener("click", () => {
+        resultadoDiv.style.display = "block";
+        resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
+        if (item.resumo) {
+          resumoPre.textContent = item.resumo;
+          resumoDiv.style.display = "block";
+          btnCopiarResumo.disabled = false;
+        } else {
+          resumoDiv.style.display = "none";
+          resumoPre.textContent = "";
+          btnCopiarResumo.disabled = true;
+        }
+      });
+
+      listaHistorico.appendChild(div);
+    });
+  } else {
+    historicoDiv.style.display = "none";
+    listaHistorico.innerHTML = "";
+    if (tituloHistorico) tituloHistorico.textContent = "Histórico";
+    if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
+  }
+}
+
+function salvarHistorico(nome, texto, thumb, resumo) {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  arr.unshift({
+    nome,
+    texto,
+    thumb,
+    resumo,
+    data: new Date().toLocaleString(),
+  });
+  if (arr.length > 10) arr = arr.slice(0, 10);
+  try {
+    localStorage.setItem("historico", JSON.stringify(arr));
+  } catch (err) {
+    if (
+      err &&
+      (err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014)
+    ) {
+      while (arr.length > 0) {
+        arr.pop();
+        try {
+          localStorage.setItem("historico", JSON.stringify(arr));
+          break;
+        } catch (e) {
+          if (
+            !(
+              e &&
+              (e.name === "QuotaExceededError" ||
+                e.code === 22 ||
+                e.code === 1014)
+            )
+          ) {
+            break;
+          }
+        }
+      }
+    }
+  }
+  carregarHistorico();
+}
+
+document.addEventListener("DOMContentLoaded", carregarHistorico);
+
+if (btnLimparHistorico) {
+  btnLimparHistorico.addEventListener("click", () => {
+    localStorage.removeItem("historico");
+    carregarHistorico();
+    statusDiv.textContent = "Histórico limpo.";
+  });
+}
+
 
 // Abre o seletor da galeria
 btnGaleria.addEventListener("click", () => {
@@ -36,8 +147,11 @@ inputGaleria.addEventListener("change", () => {
     btnProcessar.disabled = false;
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
+    resumoDiv.style.display = "none";
+    resumoPre.textContent = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
+    btnCopiarResumo.disabled = true;
 
     // Cria/revoga object URL para otimizar memória
     if (objectUrl) {
@@ -45,6 +159,8 @@ inputGaleria.addEventListener("change", () => {
       objectUrl = null;
     }
     objectUrl = URL.createObjectURL(arquivoSelecionado);
+    previewImg.src = objectUrl;
+    previewImg.style.display = "block";
   }
 });
 
@@ -57,14 +173,19 @@ inputCamera.addEventListener("change", () => {
     btnProcessar.disabled = false;
     resultadoDiv.style.display = "none";
     resultadoDiv.innerHTML = "";
+    resumoDiv.style.display = "none";
+    resumoPre.textContent = "";
     statusDiv.textContent = "";
     btnCopiar.disabled = true;
+    btnCopiarResumo.disabled = true;
 
     if (objectUrl) {
       URL.revokeObjectURL(objectUrl);
       objectUrl = null;
     }
     objectUrl = URL.createObjectURL(arquivoSelecionado);
+    previewImg.src = objectUrl;
+    previewImg.style.display = "block";
   }
 });
 
@@ -74,9 +195,13 @@ btnProcessar.addEventListener("click", async () => {
 
   btnProcessar.disabled = true;
   statusDiv.textContent = "Preparando imagem...";
+  spinner.style.display = "block";
   resultadoDiv.style.display = "none";
   resultadoDiv.innerHTML = "";
+  resumoDiv.style.display = "none";
+  resumoPre.textContent = "";
   btnCopiar.disabled = true;
+  btnCopiarResumo.disabled = true;
 
   try {
     reader = new FileReader();
@@ -128,67 +253,35 @@ btnProcessar.addEventListener("click", async () => {
           console.error(errFetch);
           statusDiv.textContent = `Erro no processamento: ${errFetch.message}`;
           btnProcessar.disabled = false;
+          spinner.style.display = "none";
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+          previewImg.src = "";
+          previewImg.style.display = "none";
           return;
         }
 
-        const nomeCaixa = json.caixa || "";
-        const dados = Array.isArray(json.dados) ? json.dados : [];
+        const textoExtraido = typeof json.texto === "string" ? json.texto : "";
 
-        // Determina as colunas dinamicamente a partir do primeiro item
-        const colunas = dados.length > 0 ? Object.keys(dados[0]) : [];
+        const pre = document.createElement("pre");
+        pre.textContent = textoExtraido;
+        pre.style.whiteSpace = "pre-wrap";
 
-        // Gera tabela HTML
-        const table = document.createElement("table");
-
-        // Primeira linha: nome da caixa (colspan dinamico)
-        const caixaRow = document.createElement("tr");
-        const caixaCell = document.createElement("td");
-        caixaCell.setAttribute("colspan", String(colunas.length));
-        caixaCell.textContent = nomeCaixa;
-        caixaCell.classList.add("caixa-cell");
-        caixaRow.appendChild(caixaCell);
-        table.appendChild(caixaRow);
-
-        // Cabeçalho da tabela
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        colunas.forEach((col) => {
-          const th = document.createElement("th");
-          th.textContent = col;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        // Corpo da tabela com validação de números
-        const tbody = document.createElement("tbody");
-        dados.forEach((linha) => {
-          const tr = document.createElement("tr");
-          colunas.forEach((col) => {
-            const valor = linha[col] ?? "";
-            const td = document.createElement("td");
-            if (typeof valor === "string" && /\d/.test(valor)) {
-              if (!numPattern.test(valor)) {
-                td.textContent = valor;
-                td.classList.add("invalid");
-              } else {
-                td.textContent = valor;
-              }
-            } else {
-              td.textContent = valor;
-            }
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-
-        // Exibe a tabela e habilita o botão "Copiar"
         resultadoDiv.style.display = "block";
         resultadoDiv.innerHTML = "";
-        resultadoDiv.appendChild(table);
+        resultadoDiv.appendChild(pre);
         btnCopiar.disabled = false;
-        statusDiv.textContent = "Tabela extraída abaixo:";
+        statusDiv.textContent = "Texto extraído abaixo:";
+
+        const resumoTxt = await gerarResumo(textoExtraido);
+        salvarHistorico(
+          arquivoSelecionado.name,
+          textoExtraido,
+          compressedDataUrl,
+          resumoTxt
+        );
 
         // -------------------------------
         // Limpeza de memória
@@ -203,11 +296,14 @@ btnProcessar.addEventListener("click", async () => {
           URL.revokeObjectURL(objectUrl);
           objectUrl = null;
         }
+        previewImg.src = "";
+        previewImg.style.display = "none";
 
         inputGaleria.value = "";
         inputCamera.value = "";
 
         btnProcessar.disabled = false;
+        spinner.style.display = "none";
       };
 
       // Removido o tratamento de erro de imagem para evitar mensagem falsa
@@ -218,6 +314,13 @@ btnProcessar.addEventListener("click", async () => {
       console.error("Erro no FileReader");
       statusDiv.textContent = "Falha ao ler a imagem.";
       btnProcessar.disabled = false;
+      spinner.style.display = "none";
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      previewImg.src = "";
+      previewImg.style.display = "none";
     };
 
     reader.readAsDataURL(arquivoSelecionado);
@@ -225,23 +328,77 @@ btnProcessar.addEventListener("click", async () => {
     console.error("Erro inesperado no processamento:", err);
     statusDiv.textContent = `Erro inesperado: ${err.message}`;
     btnProcessar.disabled = false;
+    spinner.style.display = "none";
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+    previewImg.src = "";
+    previewImg.style.display = "none";
   }
 });
 
-// Copia a tabela para a área de transferência
-btnCopiar.addEventListener("click", () => {
-  const table = resultadoDiv.querySelector("table");
-  if (!table) return;
-  const range = document.createRange();
-  range.selectNode(table);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
+// Copia o texto para a área de transferência
+btnCopiar.addEventListener("click", async () => {
+  const pre = resultadoDiv.querySelector("pre");
+  if (!pre) return;
   try {
-    document.execCommand("copy");
-    sel.removeAllRanges();
-    statusDiv.textContent = "Tabela copiada com sucesso!";
+    await navigator.clipboard.writeText(pre.textContent);
+    statusDiv.textContent = "Texto copiado com sucesso!";
   } catch (err) {
     statusDiv.textContent = "Falha ao copiar: " + err;
   }
+});
+
+async function gerarResumo(texto) {
+  if (!texto) return;
+
+  statusDiv.textContent = "Gerando análise e resumo...";
+  resumoDiv.style.display = "none";
+  resumoPre.textContent = "";
+  btnCopiarResumo.disabled = true;
+  spinner.style.display = "block";
+
+  try {
+    const resp = await fetch("/.netlify/functions/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Função retornou ${resp.status}: ${errText}`);
+    }
+
+    const jsonResumo = await resp.json();
+    const resumoTxt = [jsonResumo.resumo, jsonResumo.analise]
+      .filter((t) => typeof t === "string" && t.trim().length > 0)
+      .join("\n\n");
+
+    resumoPre.textContent = resumoTxt;
+    resumoDiv.style.display = "block";
+    btnCopiarResumo.disabled = false;
+    statusDiv.textContent = "Análise gerada abaixo:";
+    spinner.style.display = "none";
+    return resumoTxt;
+  } catch (err) {
+    console.error(err);
+    statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
+    spinner.style.display = "none";
+  }
+}
+
+// Copia o resumo
+btnCopiarResumo.addEventListener("click", () => {
+  const pre = resumoPre;
+  if (!pre || !pre.textContent) return;
+  navigator.clipboard
+    .writeText(pre.textContent)
+    .then(() => {
+      statusDiv.textContent = "Resumo copiado com sucesso!";
+    })
+    .catch((err) => {
+      statusDiv.textContent = "Falha ao copiar: " + err;
+    });
 });
