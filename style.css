@@ -70,6 +70,14 @@ h1 {
   word-break: break-all;
 }
 
+.preview {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin: 0 auto 1rem auto;
+  border-radius: 4px;
+}
+
 .action-buttons {
   display: flex;
   flex-direction: column;
@@ -113,14 +121,104 @@ h1 {
   min-height: 1.5rem;
 }
 
+.spinner {
+  border: 4px solid #ccc;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  animation: spin 1s linear infinite;
+  margin: 0.5rem auto;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .output {
   margin-top: 1rem;
-  background: #eef;
+  background: #eef6ff;
   padding: 1rem;
   border-radius: 6px;
   width: 100%;
   overflow-x: auto;
   box-sizing: border-box;
+}
+
+.resumo-output {
+  background: #fdf2d8;
+  position: relative;
+}
+
+.titulo-resumo {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.copy-inline {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.historico {
+  margin-top: 1.5rem;
+  position: relative;
+}
+
+.clear-history {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.clear-history:hover {
+  color: #000;
+}
+
+.lista-historico {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0;
+}
+
+.hist-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  cursor: pointer;
+}
+
+.hist-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.hist-caption {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  text-align: center;
+  word-break: break-all;
+}
+
+.output pre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  margin: 0;
 }
 
 .caixa-cell {
