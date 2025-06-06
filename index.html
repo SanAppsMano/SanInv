@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Extrator de Tabela da Imagem</title>
+  <title>Extrator de Texto da Imagem</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Extrator de Tabela da Imagem</h1>
+  <h1>Extrator de Texto da Imagem</h1>
   <div class="container">
     <div class="button-group">
-      <button id="btnGaleria">Escolher da Galeria</button>
-      <button id="btnCamera" class="secondary">Tirar Foto</button>
+      <button id="btnGaleria" aria-label="Escolher imagem da galeria">Escolher da Galeria</button>
+      <button id="btnCamera" class="secondary" aria-label="Tirar foto com a câmera">Tirar Foto</button>
     </div>
 
     <!-- Inputs ocultos -->
@@ -20,14 +20,26 @@
 
     <!-- Exibe o nome do arquivo selecionado -->
     <div id="filename" class="filename-label" style="display:none;"></div>
+    <img id="preview" class="preview" alt="Pré-visualização" style="display:none;" />
 
     <div class="action-buttons">
-      <button id="processar" disabled>Processar</button>
-      <button id="copiar" disabled>Copiar Tabela</button>
+      <button id="processar" disabled aria-label="Processar imagem">Processar</button>
+      <button id="copiar" disabled aria-label="Copiar texto extraído">Copiar Texto</button>
     </div>
 
     <div id="status" class="status-text"></div>
+    <div id="spinner" class="spinner" aria-hidden="true" style="display:none;"></div>
     <div class="output" id="resultado" style="display: none;"></div>
+    <div class="output resumo-output" id="resumo" style="display: none;">
+      <h2 id="tituloResumo" class="titulo-resumo">Análise do Arquivista</h2>
+      <button id="copiarResumo" class="copy-inline" aria-label="Copiar resumo" disabled>Copiar</button>
+      <pre id="textoResumo"></pre>
+    </div>
+    <div class="historico" id="historico" style="display:none;">
+      <h2 id="tituloHistorico">Histórico</h2>
+      <button id="limparHistorico" class="clear-history" aria-label="Limpar histórico" style="display:none;">Limpar</button>
+      <div id="listaHistorico" class="lista-historico"></div>
+    </div>
   </div>
 
   <script src="script.js"></script>
