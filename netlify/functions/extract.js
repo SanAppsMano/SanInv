@@ -49,12 +49,8 @@ exports.handler = async (event, _context) => {
                 {
                   type: "text",
                   text:
-                    "Extraia da imagem o nome e número da caixa (por exemplo 'CAIXA 08'), se existir, e todas as colunas presentes em quaisquer tabelas. " +
-                    "O campo 'dados' deve ser um array de objetos cujas chaves correspondam exatamente aos nomes das colunas encontradas. " +
-                    "Para qualquer número que não se enquadre no padrão de separação de milhares (pontos) e decimais (vírgula), anteponha 'VERIFICAR:' ao valor. " +
-                    "Retorne estritamente um JSON puro: " +
-                    '{"caixa":"CAIXA XX","dados":[{"Coluna":"valor"}, ...]}. ' +
-                    "Sem texto adicional ou comentários.",
+                    "Transcreva com m\u00e1xima fidelidade todo o texto vis\u00edvel da imagem, interpretando letras grandes ou incomuns quando necess\u00e1rio. " +
+                    "Devolva apenas um JSON no formato {\"texto\":\"conte\u00fado extra\u00eddo\"} sem qualquer coment\u00e1rio.",
                 },
                 {
                   type: "image_url",
