@@ -124,6 +124,23 @@ function renderHistorico() {
   });
 }
 
+function updateStorageUsage() {
+  const el = document.getElementById("storageUsage");
+  if (!el || !('localStorage' in window)) return;
+  let bytes = 0;
+  try {
+    const item = localStorage.getItem("historico");
+    bytes = item ? JSON.stringify(item).length : 0;
+  } catch {}
+  const mb = bytes / (1024 * 1024);
+  const max = 5;
+  const percent = Math.min((mb / max) * 100, 100);
+  el.textContent = `${mb.toFixed(2)} MB / ${max} MB`;
+  if (el.tagName.toLowerCase() === "progress") {
+    el.value = percent;
+  }
+}
+
 function salvarHistorico(nome, texto, thumb, resumo) {
   let arr = [];
   try {
@@ -166,10 +183,12 @@ function salvarHistorico(nome, texto, thumb, resumo) {
   }
   historicoArr = arr;
   renderHistorico();
+  updateStorageUsage();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarHistorico();
+  updateStorageUsage();
   if (inputFiltro) inputFiltro.addEventListener("input", renderHistorico);
   if (selectOrdenar) selectOrdenar.addEventListener("change", renderHistorico);
 });
@@ -198,6 +217,7 @@ if (btnLimparHistorico) {
   btnLimparHistorico.addEventListener("click", () => {
     localStorage.removeItem("historico");
     carregarHistorico();
+    updateStorageUsage();
     statusDiv.textContent = "Histórico limpo.";
   });
 }

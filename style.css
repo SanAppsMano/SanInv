@@ -207,6 +207,13 @@ h1 {
   padding: 0;
 }
 
+.storage-usage {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
