@@ -22,6 +22,11 @@ const imagemModal = document.getElementById("imagemModal");
 const imagemAmpliada = document.getElementById("imagemAmpliada");
 const inputFiltro = document.getElementById("filtroHistorico");
 const selectOrdenar = document.getElementById("ordenarHistorico");
+const btnExportarJson = document.getElementById("exportarJson");
+const btnImportarJson = document.getElementById("importarJson");
+const btnExportExcel = document.getElementById("exportarExcel");
+const btnExportPdf = document.getElementById("exportarPdf");
+const inputImportar = document.getElementById("arquivoImportar");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -151,7 +156,7 @@ function salvarHistorico(nome, texto, thumb, resumo) {
     texto,
     thumb,
     resumo,
-    data: new Date().toLocaleString(),
+    data: new Date().toLocaleString('pt-BR'),
   });
   if (arr.length > 10) arr = arr.slice(0, 10);
   try {
@@ -499,3 +504,111 @@ btnCopiarResumo.addEventListener("click", () => {
       statusDiv.textContent = "Falha ao copiar: " + err;
     });
 });
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function exportarJson() {
+  const data = localStorage.getItem("historico") || "[]";
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const ts = new Date().toLocaleString("pt-BR").replace(/[/:\s]+/g, "-");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `historico-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarJson(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const arr = JSON.parse(reader.result);
+      if (Array.isArray(arr)) {
+        let atual = [];
+        try {
+          atual = JSON.parse(localStorage.getItem("historico")) || [];
+        } catch {}
+        const merged = arr.concat(atual).slice(0, 10);
+        localStorage.setItem("historico", JSON.stringify(merged));
+        historicoArr = merged;
+        renderHistorico();
+        updateStorageUsage();
+        statusDiv.textContent = "Dados importados.";
+      } else {
+        statusDiv.textContent = "Arquivo inválido.";
+      }
+    } catch (err) {
+      statusDiv.textContent = "Erro ao importar: " + err.message;
+    }
+    if (inputImportar) inputImportar.value = "";
+  };
+  reader.readAsText(file);
+}
+
+function exportarExcel() {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  let html = "<table><tr><th>Nome</th><th>Data</th><th>Texto</th><th>Resumo</th><th>Imagem</th></tr>";
+  arr.forEach((it) => {
+    html += `<tr><td>${escapeHtml(it.nome)}</td><td>${escapeHtml(it.data)}</td><td>${escapeHtml(it.texto)}</td><td>${escapeHtml(it.resumo)}</td><td><img src="${it.thumb}" /></td></tr>`;
+  });
+  html += "</table>";
+  const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const ts = new Date().toLocaleString("pt-BR").replace(/[/:\s]+/g, "-");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `historico-${ts}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportarPdf() {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  let html = "<html><head><title>Histórico</title></head><body>";
+  arr.forEach((it) => {
+    html += `<h3>${escapeHtml(it.nome)}</h3><p>${escapeHtml(it.data)}</p><img src="${it.thumb}" style="max-width:300px;"><pre>${escapeHtml(it.texto)}</pre>`;
+    if (it.resumo) html += `<pre>${escapeHtml(it.resumo)}</pre>`;
+  });
+  html += "</body></html>";
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+if (btnExportarJson) {
+  btnExportarJson.addEventListener("click", exportarJson);
+}
+
+if (btnImportarJson && inputImportar) {
+  btnImportarJson.addEventListener("click", () => inputImportar.click());
+  inputImportar.addEventListener("change", () => {
+    if (inputImportar.files.length > 0) {
+      importarJson(inputImportar.files[0]);
+    }
+  });
+}
+
+if (btnExportExcel) {
+  btnExportExcel.addEventListener("click", exportarExcel);
+}
+
+if (btnExportPdf) {
+  btnExportPdf.addEventListener("click", exportarPdf);
+}
