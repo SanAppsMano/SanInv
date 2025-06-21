@@ -25,7 +25,6 @@ const selectOrdenar = document.getElementById("ordenarHistorico");
 const btnExportarHistorico = document.getElementById("exportarHistorico");
 const btnImportarHistorico = document.getElementById("btnImportarHistorico");
 const inputImportarHistorico = document.getElementById("importarHistorico");
-const btnExportarCSV = document.getElementById("exportarCSV");
 const btnExportarPDF = document.getElementById("exportarPDF");
 
 let arquivoSelecionado = null;
@@ -44,6 +43,27 @@ function exibirEntrada(item) {
     resumoPre.textContent = "";
     btnCopiarResumo.disabled = true;
   }
+}
+
+function limparTela() {
+  resultadoDiv.style.display = "none";
+  resultadoDiv.innerHTML = "";
+  resumoDiv.style.display = "none";
+  resumoPre.textContent = "";
+  btnCopiar.disabled = true;
+  btnCopiarResumo.disabled = true;
+  filenameDiv.textContent = "";
+  filenameDiv.style.display = "none";
+  if (objectUrl) {
+    URL.revokeObjectURL(objectUrl);
+    objectUrl = null;
+  }
+  previewImg.src = "";
+  previewImg.style.display = "none";
+  arquivoSelecionado = null;
+  if (inputGaleria) inputGaleria.value = "";
+  if (inputCamera) inputCamera.value = "";
+  statusDiv.textContent = "";
 }
 
 let reader = null;
@@ -94,14 +114,12 @@ function renderHistorico() {
     }
     if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
     if (btnExportarHistorico) btnExportarHistorico.style.display = "inline";
-    if (btnExportarCSV) btnExportarCSV.style.display = "inline";
     if (btnExportarPDF) btnExportarPDF.style.display = "inline";
   } else {
-    historicoDiv.style.display = "none";
+    historicoDiv.style.display = "block";
     if (tituloHistorico) tituloHistorico.textContent = "Histórico";
     if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
     if (btnExportarHistorico) btnExportarHistorico.style.display = "none";
-    if (btnExportarCSV) btnExportarCSV.style.display = "none";
     if (btnExportarPDF) btnExportarPDF.style.display = "none";
   }
 
@@ -229,6 +247,7 @@ if (btnLimparHistorico) {
     localStorage.removeItem("historico");
     carregarHistorico();
     updateStorageUsage();
+    limparTela();
     statusDiv.textContent = "Histórico limpo.";
   });
 }
@@ -259,41 +278,6 @@ function exportarHistorico() {
   URL.revokeObjectURL(url);
 }
 
-function exportarCSV() {
-  const arr = historicoArr;
-  if (arr.length === 0) {
-    statusDiv.textContent = "Nada para exportar.";
-    return;
-  }
-  const header = ["Nome", "Data", "Texto", "Resumo", "ImagemBase64"];
-  const linhas = arr.map((it) => {
-    const valores = [
-      it.nome,
-      it.data,
-      it.texto || "",
-      it.resumo || "",
-      it.thumb || "",
-    ].map((v) => '"' + String(v).replace(/"/g, '""') + '"');
-    return valores.join(";");
-  });
-  const csv = [header.join(";"), ...linhas].join("\n");
-  const blob = new Blob([csv], {
-    type: "text/csv;charset=utf-8",
-  });
-  const dt = new Date()
-    .toISOString()
-    .replace(/[:T]/g, "-")
-    .split(".")[0];
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `historico-${dt}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
 function exportarPDF() {
   const arr = historicoArr;
   if (arr.length === 0) {
@@ -301,11 +285,14 @@ function exportarPDF() {
     return;
   }
   let html =
-    "<html><head><title>Historico</title><style>body{font-family:sans-serif;} .item{margin-bottom:1rem;} img{max-width:200px;display:block;} pre{white-space:pre-wrap;}</style></head><body>";
-  arr.forEach((it) => {
-    html += `<div class="item"><h3>${it.nome}</h3><p>${it.data}</p><img src="${it.thumb}" alt=""/><pre>${
-      it.texto || ""
-    }</pre></div>`;
+    `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Relatório do Histórico</title><style>body{font-family:sans-serif;margin:20px;}h1{font-size:1.2rem;margin-bottom:1rem;} .item{margin-bottom:2rem;border-bottom:1px solid #ccc;padding-bottom:1rem;page-break-inside:avoid;} .item img{max-width:200px;display:block;margin:0.5rem 0;} .item pre{white-space:pre-wrap;font-family:monospace;}@media print{.item{page-break-inside:avoid;}}</style></head><body><h1>Relatório de Extrações</h1>`;
+  arr.forEach((it, idx) => {
+    html += `<div class="item"><h2>${idx + 1}. ${it.nome}</h2><p>${it.data}</p><img src="${it.thumb}" alt="Imagem"/>`;
+    html += `<pre>${it.texto || ""}</pre>`;
+    if (it.resumo) {
+      html += `<pre>${it.resumo}</pre>`;
+    }
+    html += `</div>`;
   });
   html += "</body></html>";
   const win = window.open("", "_blank");
@@ -347,9 +334,6 @@ if (btnImportarHistorico && inputImportarHistorico) {
     inputImportarHistorico.click();
   });
   inputImportarHistorico.addEventListener("change", handleImportarHistorico);
-}
-if (btnExportarCSV) {
-  btnExportarCSV.addEventListener("click", exportarCSV);
 }
 if (btnExportarPDF) {
   btnExportarPDF.addEventListener("click", exportarPDF);
