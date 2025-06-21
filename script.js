@@ -22,6 +22,11 @@ const imagemModal = document.getElementById("imagemModal");
 const imagemAmpliada = document.getElementById("imagemAmpliada");
 const inputFiltro = document.getElementById("filtroHistorico");
 const selectOrdenar = document.getElementById("ordenarHistorico");
+const btnExportarHistorico = document.getElementById("exportarHistorico");
+const btnImportarHistorico = document.getElementById("btnImportarHistorico");
+const inputImportarHistorico = document.getElementById("importarHistorico");
+const btnExportarCSV = document.getElementById("exportarCSV");
+const btnExportarPDF = document.getElementById("exportarPDF");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -88,10 +93,16 @@ function renderHistorico() {
       }
     }
     if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
+    if (btnExportarHistorico) btnExportarHistorico.style.display = "inline";
+    if (btnExportarCSV) btnExportarCSV.style.display = "inline";
+    if (btnExportarPDF) btnExportarPDF.style.display = "inline";
   } else {
     historicoDiv.style.display = "none";
     if (tituloHistorico) tituloHistorico.textContent = "Histórico";
     if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
+    if (btnExportarHistorico) btnExportarHistorico.style.display = "none";
+    if (btnExportarCSV) btnExportarCSV.style.display = "none";
+    if (btnExportarPDF) btnExportarPDF.style.display = "none";
   }
 
   listaHistorico.innerHTML = "";
@@ -151,7 +162,7 @@ function salvarHistorico(nome, texto, thumb, resumo) {
     texto,
     thumb,
     resumo,
-    data: new Date().toLocaleString(),
+    data: new Date().toLocaleString("pt-BR"),
   });
   if (arr.length > 10) arr = arr.slice(0, 10);
   try {
@@ -222,6 +233,127 @@ if (btnLimparHistorico) {
   });
 }
 
+function exportarHistorico() {
+  let arr = [];
+  try {
+    arr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {}
+  if (arr.length === 0) {
+    statusDiv.textContent = "Nada para exportar.";
+    return;
+  }
+  const blob = new Blob([JSON.stringify(arr, null, 2)], {
+    type: "application/json",
+  });
+  const dt = new Date()
+    .toISOString()
+    .replace(/[:T]/g, "-")
+    .split(".")[0];
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `historico-${dt}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportarCSV() {
+  const arr = historicoArr;
+  if (arr.length === 0) {
+    statusDiv.textContent = "Nada para exportar.";
+    return;
+  }
+  const header = ["Nome", "Data", "Texto", "Resumo", "ImagemBase64"];
+  const linhas = arr.map((it) => {
+    const valores = [
+      it.nome,
+      it.data,
+      it.texto || "",
+      it.resumo || "",
+      it.thumb || "",
+    ].map((v) => '"' + String(v).replace(/"/g, '""') + '"');
+    return valores.join(";");
+  });
+  const csv = [header.join(";"), ...linhas].join("\n");
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8",
+  });
+  const dt = new Date()
+    .toISOString()
+    .replace(/[:T]/g, "-")
+    .split(".")[0];
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `historico-${dt}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportarPDF() {
+  const arr = historicoArr;
+  if (arr.length === 0) {
+    statusDiv.textContent = "Nada para exportar.";
+    return;
+  }
+  let html =
+    "<html><head><title>Historico</title><style>body{font-family:sans-serif;} .item{margin-bottom:1rem;} img{max-width:200px;display:block;} pre{white-space:pre-wrap;}</style></head><body>";
+  arr.forEach((it) => {
+    html += `<div class="item"><h3>${it.nome}</h3><p>${it.data}</p><img src="${it.thumb}" alt=""/><pre>${
+      it.texto || ""
+    }</pre></div>`;
+  });
+  html += "</body></html>";
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+}
+
+function handleImportarHistorico(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const readerImp = new FileReader();
+  readerImp.onload = () => {
+    try {
+      const dados = JSON.parse(readerImp.result);
+      if (!Array.isArray(dados)) throw new Error("Formato inválido");
+      historicoArr = dados.concat(historicoArr);
+      localStorage.setItem("historico", JSON.stringify(historicoArr));
+      renderHistorico();
+      updateStorageUsage();
+      statusDiv.textContent = "Histórico importado.";
+    } catch (e) {
+      statusDiv.textContent = "Erro ao importar: " + e.message;
+    }
+    inputImportarHistorico.value = "";
+  };
+  readerImp.readAsText(file);
+}
+
+
+if (btnExportarHistorico) {
+  btnExportarHistorico.addEventListener("click", exportarHistorico);
+}
+if (btnImportarHistorico && inputImportarHistorico) {
+  btnImportarHistorico.addEventListener("click", () => {
+    inputImportarHistorico.click();
+  });
+  inputImportarHistorico.addEventListener("change", handleImportarHistorico);
+}
+if (btnExportarCSV) {
+  btnExportarCSV.addEventListener("click", exportarCSV);
+}
+if (btnExportarPDF) {
+  btnExportarPDF.addEventListener("click", exportarPDF);
+}
 
 // Abre o seletor da galeria
 btnGaleria.addEventListener("click", () => {

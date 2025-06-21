@@ -56,6 +56,13 @@
         </select>
       </div>
       <div id="listaHistorico" class="lista-historico"></div>
+      <div class="historico-actions">
+        <button id="exportarHistorico" class="export-history" style="display:none;" aria-label="Exportar histórico">Exportar JSON</button>
+        <button id="exportarCSV" class="export-history" style="display:none;" aria-label="Exportar para Excel">Excel</button>
+        <button id="exportarPDF" class="export-history" style="display:none;" aria-label="Exportar para PDF">PDF</button>
+        <button id="btnImportarHistorico" class="export-history" aria-label="Importar histórico">Importar</button>
+        <input type="file" id="importarHistorico" accept="application/json" style="display:none;" />
+      </div>
     </div>
     <div id="storageUsage" class="storage-usage">0 MB / 5 MB</div>
     <div id="imagemModal" class="modal-overlay" style="display:none;">
