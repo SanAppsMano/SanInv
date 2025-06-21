@@ -43,7 +43,7 @@ exports.handler = async (event, _context) => {
                 {
                   type: "text",
                   text:
-                    "Você é um arquivista especialista. Analise o texto a seguir e produza um resumo objetivo e uma análise sucinta, evitando repetições. Responda apenas em JSON no formato {\"resumo\":\"...\",\"analise\":\"...\"} sem comentários.",
+                    "Você é um arquivista especialista. A partir do texto a seguir, gere um nome curto de até três palavras que represente o conteúdo, depois produza um resumo objetivo e uma análise sucinta. Responda somente em JSON no formato {\"nome\":\"...\",\"resumo\":\"...\",\"analise\":\"...\"} sem comentários.",
                 },
                 { type: "text", text: texto },
               ],

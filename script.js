@@ -20,9 +20,12 @@ const btnLimparHistorico = document.getElementById("limparHistorico");
 const tituloHistorico = document.getElementById("tituloHistorico");
 const imagemModal = document.getElementById("imagemModal");
 const imagemAmpliada = document.getElementById("imagemAmpliada");
+const inputFiltro = document.getElementById("filtroHistorico");
+const selectOrdenar = document.getElementById("ordenarHistorico");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
+let historicoArr = [];
 function exibirEntrada(item) {
   resultadoDiv.style.display = "block";
   resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
@@ -41,19 +44,60 @@ function exibirEntrada(item) {
 let reader = null;
 
 function carregarHistorico() {
-  let arr = [];
   try {
-    arr = JSON.parse(localStorage.getItem("historico")) || [];
-  } catch {}
-  if (arr.length > 0) {
+    historicoArr = JSON.parse(localStorage.getItem("historico")) || [];
+  } catch {
+    historicoArr = [];
+  }
+  renderHistorico();
+}
+
+function filtrar(arr, texto) {
+  if (!texto) return arr;
+  const t = texto.toLowerCase();
+  return arr.filter(
+    (it) =>
+      (it.nome && it.nome.toLowerCase().includes(t)) ||
+      (it.texto && it.texto.toLowerCase().includes(t))
+  );
+}
+
+function ordenar(arr, modo) {
+  if (modo === "az") {
+    return arr.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  }
+  if (modo === "za") {
+    return arr.slice().sort((a, b) => b.nome.localeCompare(a.nome));
+  }
+  return arr;
+}
+
+function renderHistorico() {
+  const total = historicoArr.length;
+  const filtroTxt = inputFiltro ? inputFiltro.value.trim() : "";
+  const ordem = selectOrdenar ? selectOrdenar.value : "recentes";
+  let arr = ordenar(filtrar(historicoArr, filtroTxt), ordem);
+
+  if (total > 0) {
     historicoDiv.style.display = "block";
-    if (tituloHistorico)
-      tituloHistorico.textContent = `Histórico (${arr.length})`;
+    if (tituloHistorico) {
+      if (filtroTxt) {
+        tituloHistorico.textContent = `Histórico (${arr.length}/${total})`;
+      } else {
+        tituloHistorico.textContent = `Histórico (${total})`;
+      }
+    }
     if (btnLimparHistorico) btnLimparHistorico.style.display = "block";
-    listaHistorico.innerHTML = "";
-    arr.forEach((item) => {
-      const div = document.createElement("div");
-      div.className = "hist-item";
+  } else {
+    historicoDiv.style.display = "none";
+    if (tituloHistorico) tituloHistorico.textContent = "Histórico";
+    if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
+  }
+
+  listaHistorico.innerHTML = "";
+  arr.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "hist-item";
 
     const img = document.createElement("img");
     img.className = "hist-thumb";
@@ -66,25 +110,18 @@ function carregarHistorico() {
       exibirEntrada(item);
     });
 
-      const caption = document.createElement("span");
-      caption.className = "hist-caption";
-      caption.textContent = item.nome;
+    const caption = document.createElement("span");
+    caption.className = "hist-caption";
+    caption.textContent = item.nome;
 
-      div.appendChild(img);
-      div.appendChild(caption);
-      div.addEventListener("click", () => {
-        exibirEntrada(item);
-      });
-
-
-      listaHistorico.appendChild(div);
+    div.appendChild(img);
+    div.appendChild(caption);
+    div.addEventListener("click", () => {
+      exibirEntrada(item);
     });
-  } else {
-    historicoDiv.style.display = "none";
-    listaHistorico.innerHTML = "";
-    if (tituloHistorico) tituloHistorico.textContent = "Histórico";
-    if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
-  }
+
+    listaHistorico.appendChild(div);
+  });
 }
 
 function salvarHistorico(nome, texto, thumb, resumo) {
@@ -127,10 +164,15 @@ function salvarHistorico(nome, texto, thumb, resumo) {
       }
     }
   }
-  carregarHistorico();
+  historicoArr = arr;
+  renderHistorico();
 }
 
-document.addEventListener("DOMContentLoaded", carregarHistorico);
+document.addEventListener("DOMContentLoaded", () => {
+  carregarHistorico();
+  if (inputFiltro) inputFiltro.addEventListener("input", renderHistorico);
+  if (selectOrdenar) selectOrdenar.addEventListener("change", renderHistorico);
+});
 
 function abrirImagem(src, alt) {
   if (!imagemModal || !imagemAmpliada) return;
@@ -308,9 +350,9 @@ btnProcessar.addEventListener("click", async () => {
         btnCopiar.disabled = false;
         statusDiv.textContent = "Texto extraído abaixo:";
 
-        const resumoTxt = await gerarResumo(textoExtraido);
+        const { resumoTxt, nomeGerado } = await gerarResumo(textoExtraido);
         salvarHistorico(
-          arquivoSelecionado.name,
+          nomeGerado || arquivoSelecionado.name,
           textoExtraido,
           compressedDataUrl,
           resumoTxt
@@ -384,7 +426,7 @@ btnCopiar.addEventListener("click", async () => {
 });
 
 async function gerarResumo(texto) {
-  if (!texto) return;
+  if (!texto) return { resumoTxt: "", nomeGerado: "" };
 
   statusDiv.textContent = "Gerando análise e resumo...";
   resumoDiv.style.display = "none";
@@ -408,17 +450,19 @@ async function gerarResumo(texto) {
     const resumoTxt = [jsonResumo.resumo, jsonResumo.analise]
       .filter((t) => typeof t === "string" && t.trim().length > 0)
       .join("\n\n");
+    const nomeGerado = typeof jsonResumo.nome === "string" ? jsonResumo.nome : "";
 
     resumoPre.textContent = resumoTxt;
     resumoDiv.style.display = "block";
     btnCopiarResumo.disabled = false;
     statusDiv.textContent = "Análise gerada abaixo:";
     spinner.style.display = "none";
-    return resumoTxt;
+    return { resumoTxt, nomeGerado };
   } catch (err) {
     console.error(err);
     statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
     spinner.style.display = "none";
+    return { resumoTxt: "", nomeGerado: "" };
   }
 }
 

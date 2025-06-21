@@ -185,6 +185,21 @@ h1 {
   color: #000;
 }
 
+.historico-controles {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.historico-controles input[type="text"] {
+  flex: 1;
+  padding: 0.3rem;
+}
+
+.historico-controles select {
+  padding: 0.3rem;
+}
+
 .lista-historico {
   display: flex;
   gap: 0.5rem;
