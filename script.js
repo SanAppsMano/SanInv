@@ -23,7 +23,60 @@ const storageUsageText = document.getElementById("storageUsageText");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
-let reader = null;
+
+function gerarNomeCoerente(texto) {
+  const fallback = new Date().toLocaleString();
+  if (!texto || typeof texto !== "string") return fallback;
+  const linha = texto.trim().split(/\r?\n/)[0].replace(/\s+/g, " ").trim();
+  return linha ? linha.slice(0, 50) : fallback;
+}
+
+async function prepararImagem(file) {
+  const maxDim = 1024;
+  if (window.createImageBitmap) {
+    const bitmap = await createImageBitmap(file);
+    let { width, height } = bitmap;
+    if (width > maxDim || height > maxDim) {
+      const scale = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    canvas.remove();
+    return dataUrl;
+  }
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        canvas.remove();
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Imagem inválida"));
+      img.src = r.result;
+    };
+    r.onerror = () => reject(new Error("Falha ao ler imagem"));
+    r.readAsDataURL(file);
+  });
+}
 
 function updateStorageUsage() {
   let bytes = 0;
@@ -223,115 +276,26 @@ btnProcessar.addEventListener("click", async () => {
   btnCopiarResumo.disabled = true;
 
   try {
-    reader = new FileReader();
+    const compressedDataUrl = await prepararImagem(arquivoSelecionado);
+    statusDiv.textContent = "Processando... aguarde.";
 
-    reader.onload = (e) => {
-      const rawDataUrl = e.target.result;
+    let json;
+    try {
+      const resposta = await fetch("/.netlify/functions/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: compressedDataUrl }),
+      });
 
-      const img = new Image();
-      img.onload = async () => {
-        const maxDim = 1024;
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          const scale = Math.min(maxDim / width, maxDim / height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
+      if (!resposta.ok) {
+        const errText = await resposta.text();
+        throw new Error(`Função retornou ${resposta.status}: ${errText}`);
+      }
 
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Comprime para JPEG qualidade 0.8
-        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
-
-        // Limpa canvas e imagem temporária
-        ctx.clearRect(0, 0, width, height);
-        img.src = "";
-        canvas.remove();
-
-        statusDiv.textContent = "Processando... aguarde.";
-
-        let json;
-        try {
-          const resposta = await fetch("/.netlify/functions/extract", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageDataUrl: compressedDataUrl }),
-          });
-
-          if (!resposta.ok) {
-            const errText = await resposta.text();
-            throw new Error(`Função retornou ${resposta.status}: ${errText}`);
-          }
-
-          json = await resposta.json();
-        } catch (errFetch) {
-          console.error(errFetch);
-          statusDiv.textContent = `Erro no processamento: ${errFetch.message}`;
-          btnProcessar.disabled = false;
-          spinner.style.display = "none";
-          if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-            objectUrl = null;
-          }
-          previewImg.src = "";
-          previewImg.style.display = "none";
-          return;
-        }
-
-        const textoExtraido = typeof json.texto === "string" ? json.texto : "";
-
-        const pre = document.createElement("pre");
-        pre.textContent = textoExtraido;
-        pre.style.whiteSpace = "pre-wrap";
-
-        resultadoDiv.style.display = "block";
-        resultadoDiv.innerHTML = "";
-        resultadoDiv.appendChild(pre);
-        btnCopiar.disabled = false;
-        statusDiv.textContent = "Texto extraído abaixo:";
-
-        const resumoTxt = await gerarResumo(textoExtraido);
-        salvarHistorico(
-          arquivoSelecionado.name,
-          textoExtraido,
-          compressedDataUrl,
-          resumoTxt
-        );
-
-        // -------------------------------
-        // Limpeza de memória
-        // -------------------------------
-
-        arquivoSelecionado = null;
-        reader.onload = null;
-        reader.onerror = null;
-        reader = null;
-
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-          objectUrl = null;
-        }
-        previewImg.src = "";
-        previewImg.style.display = "none";
-
-        inputGaleria.value = "";
-        inputCamera.value = "";
-
-        btnProcessar.disabled = false;
-        spinner.style.display = "none";
-      };
-
-      // Removido o tratamento de erro de imagem para evitar mensagem falsa
-      img.src = rawDataUrl;
-    };
-
-    reader.onerror = () => {
-      console.error("Erro no FileReader");
-      statusDiv.textContent = "Falha ao ler a imagem.";
+      json = await resposta.json();
+    } catch (errFetch) {
+      console.error(errFetch);
+      statusDiv.textContent = `Erro no processamento: ${errFetch.message}`;
       btnProcessar.disabled = false;
       spinner.style.display = "none";
       if (objectUrl) {
@@ -340,9 +304,43 @@ btnProcessar.addEventListener("click", async () => {
       }
       previewImg.src = "";
       previewImg.style.display = "none";
-    };
+      return;
+    }
 
-    reader.readAsDataURL(arquivoSelecionado);
+    const textoExtraido = typeof json.texto === "string" ? json.texto : "";
+
+    const pre = document.createElement("pre");
+    pre.textContent = textoExtraido;
+    pre.style.whiteSpace = "pre-wrap";
+
+    resultadoDiv.style.display = "block";
+    resultadoDiv.innerHTML = "";
+    resultadoDiv.appendChild(pre);
+    btnCopiar.disabled = false;
+    statusDiv.textContent = "Texto extraído abaixo:";
+
+    const resumoTxt = await gerarResumo(textoExtraido);
+    salvarHistorico(
+      gerarNomeCoerente(textoExtraido),
+      textoExtraido,
+      compressedDataUrl,
+      resumoTxt
+    );
+
+    arquivoSelecionado = null;
+
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      objectUrl = null;
+    }
+    previewImg.src = "";
+    previewImg.style.display = "none";
+
+    inputGaleria.value = "";
+    inputCamera.value = "";
+
+    btnProcessar.disabled = false;
+    spinner.style.display = "none";
   } catch (err) {
     console.error("Erro inesperado no processamento:", err);
     statusDiv.textContent = `Erro inesperado: ${err.message}`;
