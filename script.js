@@ -18,6 +18,8 @@ const historicoDiv = document.getElementById("historico");
 const listaHistorico = document.getElementById("listaHistorico");
 const btnLimparHistorico = document.getElementById("limparHistorico");
 const tituloHistorico = document.getElementById("tituloHistorico");
+const imagemModal = document.getElementById("imagemModal");
+const imagemAmpliada = document.getElementById("imagemAmpliada");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -38,10 +40,15 @@ function carregarHistorico() {
       const div = document.createElement("div");
       div.className = "hist-item";
 
-      const img = document.createElement("img");
-      img.className = "hist-thumb";
-      img.src = item.thumb;
-      img.alt = item.nome;
+    const img = document.createElement("img");
+    img.className = "hist-thumb";
+    img.src = item.thumb;
+    img.alt = item.nome;
+
+    img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      abrirImagem(item.thumb, item.nome);
+    });
 
       const caption = document.createElement("span");
       caption.className = "hist-caption";
@@ -118,6 +125,26 @@ function salvarHistorico(nome, texto, thumb, resumo) {
 }
 
 document.addEventListener("DOMContentLoaded", carregarHistorico);
+
+function abrirImagem(src, alt) {
+  if (!imagemModal || !imagemAmpliada) return;
+  imagemAmpliada.src = src;
+  imagemAmpliada.alt = alt || "";
+  imagemModal.style.display = "flex";
+}
+
+if (imagemModal) {
+  imagemModal.addEventListener("click", () => {
+    imagemModal.style.display = "none";
+    imagemAmpliada.src = "";
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && imagemModal.style.display === "flex") {
+      imagemModal.style.display = "none";
+      imagemAmpliada.src = "";
+    }
+  });
+}
 
 if (btnLimparHistorico) {
   btnLimparHistorico.addEventListener("click", () => {
