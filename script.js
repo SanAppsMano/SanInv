@@ -23,6 +23,21 @@ const imagemAmpliada = document.getElementById("imagemAmpliada");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
+function exibirEntrada(item) {
+  resultadoDiv.style.display = "block";
+  resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
+  btnCopiar.disabled = false;
+  if (item.resumo) {
+    resumoPre.textContent = item.resumo;
+    resumoDiv.style.display = "block";
+    btnCopiarResumo.disabled = false;
+  } else {
+    resumoDiv.style.display = "none";
+    resumoPre.textContent = "";
+    btnCopiarResumo.disabled = true;
+  }
+}
+
 let reader = null;
 
 function carregarHistorico() {
@@ -48,6 +63,7 @@ function carregarHistorico() {
     img.addEventListener("click", (e) => {
       e.stopPropagation();
       abrirImagem(item.thumb, item.nome);
+      exibirEntrada(item);
     });
 
       const caption = document.createElement("span");
@@ -56,20 +72,10 @@ function carregarHistorico() {
 
       div.appendChild(img);
       div.appendChild(caption);
-
       div.addEventListener("click", () => {
-        resultadoDiv.style.display = "block";
-        resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
-        if (item.resumo) {
-          resumoPre.textContent = item.resumo;
-          resumoDiv.style.display = "block";
-          btnCopiarResumo.disabled = false;
-        } else {
-          resumoDiv.style.display = "none";
-          resumoPre.textContent = "";
-          btnCopiarResumo.disabled = true;
-        }
+        exibirEntrada(item);
       });
+
 
       listaHistorico.appendChild(div);
     });
