@@ -249,6 +249,22 @@ th {
   color: red;
 }
 
+.storage-usage-wrapper {
+  margin-top: 1rem;
+}
+
+#storageUsageBar {
+  width: 100%;
+  height: 8px;
+}
+
+.storage-usage {
+  font-size: 0.85rem;
+  color: #555;
+  text-align: center;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 480px) {
   h1 {
     font-size: 1.4rem;

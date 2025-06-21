@@ -18,10 +18,28 @@ const historicoDiv = document.getElementById("historico");
 const listaHistorico = document.getElementById("listaHistorico");
 const btnLimparHistorico = document.getElementById("limparHistorico");
 const tituloHistorico = document.getElementById("tituloHistorico");
+const storageUsageBar = document.getElementById("storageUsageBar");
+const storageUsageText = document.getElementById("storageUsageText");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
 let reader = null;
+
+function updateStorageUsage() {
+  let bytes = 0;
+  try {
+    const item = localStorage.getItem("historico");
+    if (item) bytes = JSON.stringify(item).length;
+  } catch {}
+  const mb = bytes / (1024 * 1024);
+  const percent = Math.min((mb / 5) * 100, 100);
+  if (storageUsageText) {
+    storageUsageText.textContent = `${mb.toFixed(2)} MB / 5 MB`;
+  }
+  if (storageUsageBar) {
+    storageUsageBar.value = percent;
+  }
+}
 
 function carregarHistorico() {
   let arr = [];
@@ -72,6 +90,7 @@ function carregarHistorico() {
     if (tituloHistorico) tituloHistorico.textContent = "Histórico";
     if (btnLimparHistorico) btnLimparHistorico.style.display = "none";
   }
+  updateStorageUsage();
 }
 
 function salvarHistorico(nome, texto, thumb, resumo) {
