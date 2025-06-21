@@ -55,6 +55,13 @@
           <option value="za">Z-A</option>
         </select>
       </div>
+      <div class="export-buttons">
+        <button id="exportarJson" class="secondary" aria-label="Exportar histórico">Exportar</button>
+        <button id="importarJson" class="secondary" aria-label="Importar histórico">Importar</button>
+        <button id="exportarExcel" class="secondary" aria-label="Exportar para Excel">Excel</button>
+        <button id="exportarPdf" class="secondary" aria-label="Exportar para PDF">PDF</button>
+      </div>
+      <input type="file" id="arquivoImportar" accept="application/json" style="display:none;" />
       <div id="listaHistorico" class="lista-historico"></div>
     </div>
     <div id="storageUsage" class="storage-usage">0 MB / 5 MB</div>
