@@ -14,6 +14,8 @@ const resumoPre = document.getElementById("textoResumo");
 const filenameDiv = document.getElementById("filename");
 const previewImg = document.getElementById("preview");
 const spinner = document.getElementById("spinner");
+const btnDetalhes = document.getElementById("mostrarDetalhes");
+const detalhesPre = document.getElementById("detalhesErro");
 const historicoDiv = document.getElementById("historico");
 const listaHistorico = document.getElementById("listaHistorico");
 const btnLimparHistorico = document.getElementById("limparHistorico");
@@ -35,6 +37,7 @@ const btnSelecionarTodos = document.getElementById("selecionarTodos");
 let arquivoSelecionado = null;
 let objectUrl = null;
 let historicoArr = [];
+let ultimoErroDetalhe = "";
 function exibirEntrada(item) {
   resultadoDiv.style.display = "block";
   resultadoDiv.innerHTML = `<pre>${item.texto}</pre>`;
@@ -69,6 +72,39 @@ function limparTela() {
   if (inputGaleria) inputGaleria.value = "";
   if (inputCamera) inputCamera.value = "";
   statusDiv.textContent = "";
+  ocultarDetalhes();
+}
+
+function ocultarDetalhes() {
+  ultimoErroDetalhe = "";
+  if (btnDetalhes) btnDetalhes.style.display = "none";
+  if (detalhesPre) detalhesPre.style.display = "none";
+  if (btnDetalhes) btnDetalhes.textContent = "Mostrar detalhes";
+  if (detalhesPre) detalhesPre.textContent = "";
+}
+
+function mostrarDetalhamento() {
+  if (!detalhesPre || !btnDetalhes) return;
+  const visivel = detalhesPre.style.display !== "none";
+  if (visivel) {
+    detalhesPre.style.display = "none";
+    btnDetalhes.textContent = "Mostrar detalhes";
+  } else {
+    detalhesPre.textContent = ultimoErroDetalhe;
+    detalhesPre.style.display = "block";
+    btnDetalhes.textContent = "Ocultar detalhes";
+  }
+}
+
+function mostrarErroOperacional(codigo, detalhe) {
+  const codTxt = codigo ? ` (erro ${codigo})` : "";
+  statusDiv.textContent =
+    `Não foi possível concluir${codTxt}. Tente novamente ou use outra imagem.`;
+  ultimoErroDetalhe = detalhe || "";
+  if (btnDetalhes) btnDetalhes.style.display = "inline";
+  if (detalhesPre) detalhesPre.style.display = "none";
+  if (btnDetalhes) btnDetalhes.textContent = "Mostrar detalhes";
+  console.error(`Erro${codTxt}:`, detalhe);
 }
 
 let reader = null;
@@ -421,6 +457,7 @@ inputGaleria.addEventListener("change", () => {
     resumoDiv.style.display = "none";
     resumoPre.textContent = "";
     statusDiv.textContent = "";
+    ocultarDetalhes();
     btnCopiar.disabled = true;
     btnCopiarResumo.disabled = true;
 
@@ -447,6 +484,7 @@ inputCamera.addEventListener("change", () => {
     resumoDiv.style.display = "none";
     resumoPre.textContent = "";
     statusDiv.textContent = "";
+    ocultarDetalhes();
     btnCopiar.disabled = true;
     btnCopiarResumo.disabled = true;
 
@@ -466,6 +504,7 @@ btnProcessar.addEventListener("click", async () => {
 
   btnProcessar.disabled = true;
   statusDiv.textContent = "Preparando imagem...";
+  ocultarDetalhes();
   spinner.style.display = "block";
   resultadoDiv.style.display = "none";
   resultadoDiv.innerHTML = "";
@@ -516,13 +555,21 @@ btnProcessar.addEventListener("click", async () => {
 
           if (!resposta.ok) {
             const errText = await resposta.text();
-            throw new Error(`Função retornou ${resposta.status}: ${errText}`);
+            mostrarErroOperacional(resposta.status, errText);
+            btnProcessar.disabled = false;
+            spinner.style.display = "none";
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+              objectUrl = null;
+            }
+            previewImg.src = "";
+            previewImg.style.display = "none";
+            return;
           }
 
           json = await resposta.json();
         } catch (errFetch) {
-          console.error(errFetch);
-          statusDiv.textContent = `Erro no processamento: ${errFetch.message}`;
+          mostrarErroOperacional(null, errFetch.message);
           btnProcessar.disabled = false;
           spinner.style.display = "none";
           if (objectUrl) {
@@ -582,8 +629,7 @@ btnProcessar.addEventListener("click", async () => {
     };
 
     reader.onerror = () => {
-      console.error("Erro no FileReader");
-      statusDiv.textContent = "Falha ao ler a imagem.";
+      mostrarErroOperacional(null, "Falha ao ler a imagem.");
       btnProcessar.disabled = false;
       spinner.style.display = "none";
       if (objectUrl) {
@@ -596,8 +642,7 @@ btnProcessar.addEventListener("click", async () => {
 
     reader.readAsDataURL(arquivoSelecionado);
   } catch (err) {
-    console.error("Erro inesperado no processamento:", err);
-    statusDiv.textContent = `Erro inesperado: ${err.message}`;
+    mostrarErroOperacional(null, err.message);
     btnProcessar.disabled = false;
     spinner.style.display = "none";
     if (objectUrl) {
@@ -625,6 +670,7 @@ async function gerarResumo(texto) {
   if (!texto) return { resumoTxt: "", nomeGerado: "" };
 
   statusDiv.textContent = "Gerando análise e resumo...";
+  ocultarDetalhes();
   resumoDiv.style.display = "none";
   resumoPre.textContent = "";
   btnCopiarResumo.disabled = true;
@@ -639,7 +685,9 @@ async function gerarResumo(texto) {
 
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error(`Função retornou ${resp.status}: ${errText}`);
+      mostrarErroOperacional(resp.status, errText);
+      spinner.style.display = "none";
+      return { resumoTxt: "", nomeGerado: "" };
     }
 
     const jsonResumo = await resp.json();
@@ -655,8 +703,7 @@ async function gerarResumo(texto) {
     spinner.style.display = "none";
     return { resumoTxt, nomeGerado };
   } catch (err) {
-    console.error(err);
-    statusDiv.textContent = `Erro ao gerar análise: ${err.message}`;
+    mostrarErroOperacional(null, err.message);
     spinner.style.display = "none";
     return { resumoTxt: "", nomeGerado: "" };
   }
@@ -675,3 +722,7 @@ btnCopiarResumo.addEventListener("click", () => {
       statusDiv.textContent = "Falha ao copiar: " + err;
     });
 });
+
+if (btnDetalhes) {
+  btnDetalhes.addEventListener("click", mostrarDetalhamento);
+}
