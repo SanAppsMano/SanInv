@@ -26,6 +26,11 @@ const btnExportarHistorico = document.getElementById("exportarHistorico");
 const btnImportarHistorico = document.getElementById("btnImportarHistorico");
 const inputImportarHistorico = document.getElementById("importarHistorico");
 const btnExportarPDF = document.getElementById("exportarPDF");
+const limparModal = document.getElementById("limparModal");
+const listaLimparDiv = document.getElementById("listaLimpar");
+const btnConfirmarLimpar = document.getElementById("confirmarLimpar");
+const btnCancelarLimpar = document.getElementById("cancelarLimpar");
+const btnSelecionarTodos = document.getElementById("selecionarTodos");
 
 let arquivoSelecionado = null;
 let objectUrl = null;
@@ -242,13 +247,68 @@ if (imagemModal) {
   });
 }
 
-if (btnLimparHistorico) {
-  btnLimparHistorico.addEventListener("click", () => {
+function abrirLimparModal() {
+  if (!limparModal || !listaLimparDiv) return;
+  listaLimparDiv.innerHTML = "";
+  historicoArr.forEach((item, idx) => {
+    const label = document.createElement("label");
+    label.className = "limpar-item";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = idx;
+    cb.checked = true;
+    const span = document.createElement("span");
+    span.textContent = item.nome;
+    label.appendChild(cb);
+    label.appendChild(span);
+    listaLimparDiv.appendChild(label);
+  });
+  limparModal.style.display = "flex";
+}
+
+function fecharLimparModal() {
+  if (limparModal) limparModal.style.display = "none";
+}
+
+function confirmarLimparHistorico() {
+  if (!listaLimparDiv) return;
+  const checks = listaLimparDiv.querySelectorAll("input[type='checkbox']");
+  const manter = [];
+  checks.forEach((cb, i) => {
+    if (!cb.checked) {
+      manter.push(historicoArr[i]);
+    }
+  });
+  historicoArr = manter;
+  if (historicoArr.length > 0) {
+    localStorage.setItem("historico", JSON.stringify(historicoArr));
+  } else {
     localStorage.removeItem("historico");
-    carregarHistorico();
-    updateStorageUsage();
-    limparTela();
-    statusDiv.textContent = "Histórico limpo.";
+  }
+  renderHistorico();
+  updateStorageUsage();
+  limparTela();
+  statusDiv.textContent = "Histórico atualizado.";
+  fecharLimparModal();
+}
+
+if (btnLimparHistorico) {
+  btnLimparHistorico.addEventListener("click", abrirLimparModal);
+}
+
+if (btnCancelarLimpar) {
+  btnCancelarLimpar.addEventListener("click", fecharLimparModal);
+}
+
+if (btnConfirmarLimpar) {
+  btnConfirmarLimpar.addEventListener("click", confirmarLimparHistorico);
+}
+
+if (btnSelecionarTodos) {
+  btnSelecionarTodos.addEventListener("click", () => {
+    const checks = listaLimparDiv.querySelectorAll("input[type='checkbox']");
+    const allChecked = Array.from(checks).every((c) => c.checked);
+    checks.forEach((c) => (c.checked = !allChecked));
   });
 }
 
