@@ -196,11 +196,11 @@ function renderHistorico() {
 
 function updateStorageUsage() {
   const el = document.getElementById("storageUsage");
-  if (!el || !('localStorage' in window)) return;
+  if (!el || !("localStorage" in window)) return;
   let bytes = 0;
   try {
     const item = localStorage.getItem("historico");
-    bytes = item ? JSON.stringify(item).length : 0;
+    bytes = item ? new Blob([item]).size : 0;
   } catch {}
   const mb = bytes / (1024 * 1024);
   const max = 5;
@@ -208,6 +208,10 @@ function updateStorageUsage() {
   el.textContent = `${mb.toFixed(2)} MB / ${max} MB`;
   if (el.tagName.toLowerCase() === "progress") {
     el.value = percent;
+  }
+  if (percent > 90) {
+    statusDiv.textContent =
+      "Aviso: espaço do histórico quase cheio. Exporte para não perder dados.";
   }
 }
 
@@ -223,7 +227,6 @@ function salvarHistorico(nome, texto, thumb, resumo) {
     resumo,
     data: new Date().toLocaleString("pt-BR"),
   });
-  if (arr.length > 10) arr = arr.slice(0, 10);
   try {
     localStorage.setItem("historico", JSON.stringify(arr));
   } catch (err) {
@@ -231,6 +234,8 @@ function salvarHistorico(nome, texto, thumb, resumo) {
       err &&
       (err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014)
     ) {
+      statusDiv.textContent =
+        "Espaço esgotado. Exporte ou limpe o histórico para continuar.";
       while (arr.length > 0) {
         arr.pop();
         try {
@@ -240,9 +245,7 @@ function salvarHistorico(nome, texto, thumb, resumo) {
           if (
             !(
               e &&
-              (e.name === "QuotaExceededError" ||
-                e.code === 22 ||
-                e.code === 1014)
+              (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014)
             )
           ) {
             break;
